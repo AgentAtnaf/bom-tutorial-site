@@ -1,0 +1,1650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BS Dynamic BoM — Developer Tutorial</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Playfair+Display:ital,wght@0,700;0,800;1,700;1,800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/base16/material-darker.min.css">
+<style>
+:root {
+  --parch:       #F5F0E8;
+  --parch-deep:  #EDE8DC;
+  --parch-card:  #FAF7F2;
+  --border:      #D8D0C0;
+  --border-light:#E8E2D8;
+  --text:        #2A1F0E;
+  --text-mid:    #5C4A32;
+  --text-muted:  #8C7B65;
+  --coral:       #C45C3A;
+  --coral-lt:    #E8755A;
+  --coral-bg:    #FDF2EE;
+  --coral-border:#E8A090;
+  --blue:        #2D6BE4;
+  --blue-bg:     #EEF4FF;
+  --blue-border: #93B8F5;
+  --red:         #C0392B;
+  --red-bg:      #FFF1F0;
+  --red-border:  #F5A8A0;
+  --green:       #2D7D5F;
+  --green-bg:    #EDFAF4;
+  --green-border:#80CDB4;
+  --amber:       #A05C10;
+  --amber-bg:    #FFF8EC;
+  --code-bg:     #1C1C2E;
+  --code-bar:    #14142A;
+  --ic-bg:       #EDE8DC;
+  --ic-text:     #7C4B2A;
+  --sidebar-w:   260px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;font-size:15px}
+body{font-family:'Inter',sans-serif;background:var(--parch);color:var(--text);line-height:1.7;overflow-x:hidden}
+code,pre,kbd,samp{font-family:'JetBrains Mono',monospace}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--parch-deep)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--text-muted)}
+
+/* ── SIDEBAR ── */
+#sidebar{
+  position:fixed;top:0;left:0;width:var(--sidebar-w);height:100vh;
+  background:var(--parch-deep);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;overflow-y:auto;z-index:100;
+}
+.side-head{padding:28px 22px 20px;border-bottom:1px solid var(--border)}
+.side-label{
+  font-family:'JetBrains Mono',monospace;font-size:.63rem;font-weight:600;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);
+  margin-bottom:10px;
+}
+.side-title{
+  font-family:'Playfair Display',serif;font-size:1.35rem;font-weight:700;
+  font-style:italic;color:var(--text);line-height:1.2;margin-bottom:4px;
+}
+.side-sub{font-size:.72rem;color:var(--text-muted)}
+.side-badges{display:flex;gap:5px;flex-wrap:wrap;margin-top:12px}
+.badge{
+  padding:2px 8px;border-radius:20px;font-family:'JetBrains Mono',monospace;
+  font-size:.62rem;font-weight:600;letter-spacing:.04em;
+}
+.badge-coral{background:var(--coral-bg);color:var(--coral);border:1px solid var(--coral-border)}
+.badge-warm{background:var(--parch-card);color:var(--text-muted);border:1px solid var(--border)}
+
+#sidebar nav{padding:12px 10px;flex:1}
+.nav-group-label{
+  font-size:.62rem;text-transform:uppercase;letter-spacing:.1em;
+  color:var(--text-muted);padding:10px 12px 4px;
+}
+#sidebar nav a{
+  display:flex;align-items:center;gap:9px;padding:6px 12px;
+  border-radius:6px;font-size:.78rem;font-weight:500;color:var(--text-mid);
+  text-decoration:none;transition:all .15s;border-left:2px solid transparent;
+  margin-bottom:1px;
+}
+#sidebar nav a:hover{color:var(--text);background:rgba(0,0,0,.04)}
+#sidebar nav a.active{
+  color:var(--coral);background:var(--coral-bg);
+  border-left-color:var(--coral);
+}
+#sidebar nav a .num{
+  font-family:'JetBrains Mono',monospace;font-size:.65rem;font-weight:600;
+  color:var(--text-muted);width:20px;flex-shrink:0;
+}
+#sidebar nav a.active .num{color:var(--coral)}
+.side-footer{
+  padding:14px 22px;border-top:1px solid var(--border);
+  font-size:.68rem;color:var(--text-muted);line-height:1.5;
+}
+
+/* ── MAIN ── */
+#main{margin-left:var(--sidebar-w);min-height:100vh}
+
+/* ── HERO ── */
+.hero{
+  background:linear-gradient(135deg,#EDE5D4 0%,#F5EDD8 40%,#F0E8D5 100%);
+  border-bottom:1px solid var(--border);
+  padding:80px 72px 64px;
+  position:relative;overflow:hidden;
+}
+.hero::before{
+  content:'';position:absolute;top:-60px;right:-60px;
+  width:380px;height:380px;border-radius:50%;
+  background:radial-gradient(circle,rgba(196,92,58,.08) 0%,transparent 70%);
+  pointer-events:none;
+}
+.hero-eyebrow{
+  font-family:'JetBrains Mono',monospace;font-size:.68rem;font-weight:600;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--coral);
+  margin-bottom:18px;
+}
+.hero h1{
+  font-family:'Playfair Display',serif;font-size:3rem;font-weight:800;
+  line-height:1.18;color:var(--text);margin-bottom:20px;max-width:620px;
+}
+.hero h1 em{font-style:italic;color:var(--coral)}
+.hero-desc{
+  font-size:.97rem;color:var(--text-mid);max-width:560px;
+  line-height:1.7;margin-bottom:36px;
+}
+.hero-meta{
+  display:flex;flex-wrap:wrap;gap:0;
+  border:1px solid var(--border);border-radius:8px;
+  overflow:hidden;width:fit-content;max-width:100%;
+  background:rgba(255,255,255,.4);
+}
+.hero-meta-item{
+  padding:10px 20px;border-right:1px solid var(--border);
+}
+.hero-meta-item:last-child{border-right:none}
+.hero-meta-label{
+  font-family:'JetBrains Mono',monospace;font-size:.6rem;font-weight:600;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);
+  margin-bottom:3px;
+}
+.hero-meta-val{font-size:.82rem;font-weight:600;color:var(--text)}
+
+/* ── SECTIONS ── */
+.section{padding:68px 72px;border-bottom:1px solid var(--border-light)}
+.section:last-of-type{border-bottom:none}
+.section-tag{
+  font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:600;
+  color:var(--coral);letter-spacing:.08em;margin-bottom:10px;
+  display:flex;align-items:center;gap:8px;
+}
+.section-tag::after{
+  content:'';flex:1;height:1px;background:var(--coral-border);opacity:.4;max-width:60px;
+}
+.section h2{
+  font-size:1.75rem;font-weight:700;color:var(--text);
+  line-height:1.25;margin-bottom:16px;
+}
+.section-lead{
+  font-size:.97rem;color:var(--text-mid);max-width:680px;
+  margin-bottom:36px;line-height:1.7;
+}
+
+/* ── TYPOGRAPHY ── */
+h3{font-size:1.1rem;font-weight:700;color:var(--text);margin:36px 0 12px}
+h4{font-size:.92rem;font-weight:700;color:var(--text-mid);margin:24px 0 10px;text-transform:uppercase;letter-spacing:.05em}
+p{margin-bottom:14px;font-size:.93rem;color:var(--text-mid)}
+p strong{color:var(--text);font-weight:600}
+ul,ol{padding-left:1.4em;margin-bottom:16px}
+li{font-size:.93rem;color:var(--text-mid);margin-bottom:5px;line-height:1.6}
+li strong{color:var(--text)}
+
+/* ── INLINE CODE ── */
+:not(pre) > code{
+  background:var(--ic-bg);color:var(--ic-text);
+  padding:1px 6px;border-radius:4px;font-size:.82em;font-weight:500;
+}
+
+/* ── CODE BLOCKS ── */
+.code-block{
+  border-radius:10px;overflow:hidden;margin:20px 0;
+  border:1px solid rgba(255,255,255,.04);
+  box-shadow:0 4px 24px rgba(0,0,0,.15);
+}
+.code-header{
+  background:var(--code-bar);padding:9px 16px;
+  display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+.code-lang{
+  font-family:'JetBrains Mono',monospace;font-size:.65rem;font-weight:600;
+  letter-spacing:.1em;text-transform:uppercase;
+  color:rgba(255,255,255,.4);
+}
+.code-lang span{color:var(--coral-lt);margin-right:4px}
+.copy-btn{
+  font-family:'JetBrains Mono',monospace;font-size:.62rem;font-weight:600;
+  letter-spacing:.06em;text-transform:uppercase;
+  background:rgba(255,255,255,.07);color:rgba(255,255,255,.45);
+  border:1px solid rgba(255,255,255,.1);border-radius:4px;
+  padding:3px 10px;cursor:pointer;transition:all .15s;
+}
+.copy-btn:hover{background:rgba(255,255,255,.12);color:rgba(255,255,255,.8)}
+.copy-btn.copied{background:rgba(45,125,95,.25);color:#80CDB4;border-color:rgba(45,125,95,.4)}
+.code-block pre{
+  margin:0;padding:20px;background:var(--code-bg);color:#CDD6F4;
+  overflow-x:auto;font-size:.82rem;line-height:1.65;
+}
+.code-block pre code{background:none;color:#CDD6F4;padding:0;font-size:inherit}
+
+/* ── CALLOUT BOXES ── */
+.callout{
+  border-radius:8px;padding:16px 20px;margin:20px 0;
+  border-left:3px solid transparent;display:flex;gap:14px;align-items:flex-start;
+}
+.callout-icon{
+  font-size:1rem;flex-shrink:0;margin-top:.1em;
+  font-family:'JetBrains Mono',monospace;
+}
+.callout-body{flex:1}
+.callout-body p:last-child{margin-bottom:0}
+.callout-body p{font-size:.88rem}
+.callout-title{
+  font-family:'JetBrains Mono',monospace;font-size:.65rem;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;
+}
+.callout.info{background:var(--blue-bg);border-left-color:var(--blue)}
+.callout.info .callout-icon,.callout.info .callout-title{color:var(--blue)}
+.callout.gotcha{background:var(--red-bg);border-left-color:var(--red)}
+.callout.gotcha .callout-icon,.callout.gotcha .callout-title{color:var(--red)}
+.callout.tip{background:var(--green-bg);border-left-color:var(--green)}
+.callout.tip .callout-icon,.callout.tip .callout-title{color:var(--green)}
+.callout.note{background:var(--amber-bg);border-left-color:var(--amber)}
+.callout.note .callout-icon,.callout.note .callout-title{color:var(--amber)}
+
+/* ── TABLES ── */
+.table-wrap{overflow-x:auto;margin:20px 0;border-radius:8px;border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:.83rem}
+thead tr{background:var(--parch-deep)}
+thead th{
+  padding:10px 14px;text-align:left;font-weight:700;
+  font-size:.72rem;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--text-mid);border-bottom:1px solid var(--border);
+}
+tbody tr{border-bottom:1px solid var(--border-light)}
+tbody tr:last-child{border-bottom:none}
+tbody tr:nth-child(even){background:rgba(0,0,0,.015)}
+tbody td{padding:9px 14px;color:var(--text-mid);vertical-align:top}
+tbody td:first-child{font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--coral);font-weight:500}
+.tag-pill{
+  display:inline-block;padding:1px 8px;border-radius:20px;
+  font-family:'JetBrains Mono',monospace;font-size:.65rem;font-weight:600;
+}
+.tag-coral{background:var(--coral-bg);color:var(--coral)}
+.tag-blue{background:var(--blue-bg);color:var(--blue)}
+.tag-green{background:var(--green-bg);color:var(--green)}
+.tag-warm{background:var(--ic-bg);color:var(--text-muted)}
+
+/* ── FLOW DIAGRAM ── */
+.flow{display:flex;flex-direction:column;gap:0;margin:24px 0}
+.flow-step{display:flex;align-items:stretch;gap:0}
+.flow-side{display:flex;flex-direction:column;align-items:center;width:46px;flex-shrink:0}
+.flow-num{
+  width:36px;height:36px;border-radius:50%;background:var(--coral);
+  color:#fff;font-family:'JetBrains Mono',monospace;font-size:.75rem;
+  font-weight:700;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;z-index:1;
+}
+.flow-line{width:2px;flex:1;background:var(--coral-border);margin:0 auto}
+.flow-step:last-child .flow-line{display:none}
+.flow-card{
+  flex:1;background:var(--parch-card);border:1px solid var(--border);
+  border-radius:8px;padding:14px 18px;margin:0 0 10px 0;
+}
+.flow-card-title{font-size:.88rem;font-weight:700;color:var(--text);margin-bottom:4px}
+.flow-card-desc{font-size:.8rem;color:var(--text-muted);line-height:1.6;margin:0}
+.flow-card code{font-size:.75rem;background:var(--ic-bg);color:var(--ic-text);padding:1px 5px;border-radius:3px}
+
+/* ── IMAGES ── */
+.img-block{margin:28px 0}
+.img-caption{
+  font-size:.75rem;color:var(--text-muted);margin-top:8px;
+  font-style:italic;text-align:center;
+}
+.img-block img{
+  max-width:100%;border-radius:8px;border:1px solid var(--border);
+  cursor:zoom-in;transition:box-shadow .2s;
+  box-shadow:0 2px 12px rgba(0,0,0,.08);
+}
+.img-block img:hover{box-shadow:0 6px 28px rgba(0,0,0,.15)}
+.img-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:28px 0}
+
+/* ── RULE CARDS (Section 6) ── */
+.rule-card{
+  border:1px solid var(--border);border-radius:10px;
+  overflow:hidden;margin:28px 0;background:var(--parch-card);
+}
+.rule-card-header{
+  padding:14px 20px;background:var(--parch-deep);
+  border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;
+}
+.rule-letter{
+  width:32px;height:32px;border-radius:6px;background:var(--coral);
+  color:#fff;font-family:'JetBrains Mono',monospace;font-size:.82rem;
+  font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.rule-title{font-size:.92rem;font-weight:700;color:var(--text)}
+.rule-desc{font-size:.8rem;color:var(--text-muted);margin-top:1px}
+.rule-body{padding:4px 0 0}
+.rule-body .code-block{border-radius:0;border:none;box-shadow:none;margin:0}
+.rule-body .code-header{border-radius:0}
+.rule-body pre{border-radius:0}
+
+/* ── SECTION 09 PROMPT GUIDE ── */
+.prompt-box{
+  border:2px dashed var(--border);border-radius:10px;
+  padding:24px;margin:20px 0;background:var(--parch-card);
+}
+.prompt-box-label{
+  font-family:'JetBrains Mono',monospace;font-size:.65rem;font-weight:700;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted);
+  margin-bottom:14px;display:flex;align-items:center;gap:8px;
+}
+.prompt-box-label::before{
+  content:'';display:inline-block;width:6px;height:6px;
+  border-radius:50%;background:var(--coral);
+}
+
+/* ── LIGHTBOX ── */
+#lightbox{
+  display:none;position:fixed;inset:0;z-index:1000;
+  background:rgba(0,0,0,.82);cursor:zoom-out;
+  align-items:center;justify-content:center;
+}
+#lightbox.open{display:flex}
+#lightbox img{
+  max-width:90vw;max-height:90vh;border-radius:8px;
+  box-shadow:0 20px 80px rgba(0,0,0,.6);
+}
+#lightbox-close{
+  position:absolute;top:20px;right:28px;
+  font-size:1.5rem;color:rgba(255,255,255,.7);cursor:pointer;
+  font-family:'Inter',sans-serif;line-height:1;
+}
+#lightbox-close:hover{color:#fff}
+
+/* ── FOOTER ── */
+.site-footer{
+  padding:48px 72px;background:var(--parch-deep);
+  border-top:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;
+}
+.footer-brand{font-family:'Playfair Display',serif;font-size:1rem;font-style:italic;color:var(--text-mid)}
+.footer-meta{font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--text-muted)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  #sidebar{width:220px}
+  #main{margin-left:220px}
+  .hero,.section{padding-left:32px;padding-right:32px}
+  .hero h1{font-size:2.2rem}
+}
+@media(max-width:700px){
+  #sidebar{display:none}
+  #main{margin-left:0}
+  .hero,.section{padding:40px 24px}
+  .img-grid{grid-template-columns:1fr}
+  .hero-meta{flex-direction:column}
+  .hero-meta-item{border-right:none;border-bottom:1px solid var(--border)}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ SIDEBAR ═══════════════ -->
+<aside id="sidebar">
+  <div class="side-head">
+    <div class="side-label">Odoo 14 · Module</div>
+    <div class="side-title">Dynamic BoM<br>Rule</div>
+    <div class="side-sub">Sale Configuration</div>
+    <div class="side-badges">
+      <span class="badge badge-coral">v14.0.1.0.3</span>
+      <span class="badge badge-warm">Developer</span>
+    </div>
+  </div>
+  <nav>
+    <div class="nav-group-label">Contents</div>
+    <a href="#s01"><span class="num">01</span>Architecture Overview</a>
+    <a href="#s02"><span class="num">02</span>Data Flow End-to-End</a>
+    <a href="#s03"><span class="num">03</span>Product Template Setup</a>
+    <a href="#s04"><span class="num">04</span>Bill of Materials Setup</a>
+    <a href="#s05"><span class="num">05</span>Python Rule API</a>
+    <a href="#s06"><span class="num">06</span>Sample Rules</a>
+    <a href="#s07"><span class="num">07</span>Category Parameters</a>
+    <a href="#s08"><span class="num">08</span>Tips &amp; Gotchas</a>
+    <a href="#s09"><span class="num">09</span>AI Prompt Guide</a>
+  </nav>
+  <div class="side-footer">
+    bs_dynamic_bom_sale<br>
+    Basic Solution Co., Ltd.
+  </div>
+</aside>
+
+<!-- ═══════════════ MAIN ═══════════════ -->
+<main id="main">
+
+<!-- ── HERO ── -->
+<div class="hero">
+  <div class="hero-eyebrow">Tutorial · For Python Developers</div>
+  <h1>Dynamic BoM<br><em>rules that think</em></h1>
+  <p class="hero-desc">
+    Write Python rules on individual BoM lines to calculate component quantities,
+    set product names, and auto-create product variants — all driven by a single
+    configuration wizard on the Sales Order.
+  </p>
+  <div class="hero-meta">
+    <div class="hero-meta-item">
+      <div class="hero-meta-label">Module</div>
+      <div class="hero-meta-val">bs_dynamic_bom_sale</div>
+    </div>
+    <div class="hero-meta-item">
+      <div class="hero-meta-label">Platform</div>
+      <div class="hero-meta-val">Odoo 14</div>
+    </div>
+    <div class="hero-meta-item">
+      <div class="hero-meta-label">Min Version</div>
+      <div class="hero-meta-val">14.0.1.0.3</div>
+    </div>
+    <div class="hero-meta-item">
+      <div class="hero-meta-label">Audience</div>
+      <div class="hero-meta-val">Developers</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ §01 ARCHITECTURE ═══════════════ -->
+<section class="section" id="s01">
+  <div class="section-tag">§ 01</div>
+  <h2>Architecture Overview</h2>
+  <p class="section-lead">
+    Two modules work together: <code>bs_dynamic_bom_rule</code> adds Python rule
+    fields to BoM lines, and <code>bs_dynamic_bom_sale</code> adds the configuration
+    wizard and variant creation logic to the Sales Order flow.
+  </p>
+
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-lang"><span>TEXT</span>Architecture Diagram</span>
+      <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+    </div>
+    <pre><code class="language-plaintext">bs_dynamic_bom_rule          bs_dynamic_bom_sale
+─────────────────────        ──────────────────────────────────────
+mrp.bom.line                 bs.sale.config.wizard
+  └── use_python_rule              ├── wizard fields (width, height…)
+  └── python_rule (code)           ├── กันสาด fields (cloth_method…)
+                                   ├── custom_values (JSON)
+RuleEvaluator                      └── _get_values() → values dict
+  └── evaluate(rule, values)
+        │  ← values dict
+        │  → result (components)    sale.order.line
+        │  → product_name             bs_config_json       (raw input)
+        │  → product_attributes       bs_config_attributes (attrs JSON)
+        │  → log                      bs_config_log        (breakdown)
+        ▼
+  on SO confirmation
+  _bs_find_or_create_variant()
+    └── dynamically creates product.attribute / .value / .template.attribute.line
+    └── finds or creates product.product variant</code></pre>
+  </div>
+
+  <h3>Key Components</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Component</th><th>Location</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td>RuleEvaluator</td><td>bs_dynamic_bom_rule</td><td>Sandboxed Python executor. Receives <code>values</code>, runs rule code, returns <code>result</code></td></tr>
+        <tr><td>bs.sale.config.wizard</td><td>bs_dynamic_bom_sale</td><td>Wizard on SO line — collects dimensions/options, builds <code>values</code> dict, previews and applies BoM</td></tr>
+        <tr><td>_bs_find_or_create_variant()</td><td>bs_dynamic_bom_sale</td><td>Creates <code>product.attribute</code> records dynamically with <code>create_variant='dynamic'</code>, finds or creates the <code>product.product</code> variant</td></tr>
+        <tr><td>bs_config_json</td><td>sale.order.line</td><td>Stores the raw <code>values</code> dict as JSON — re-used at SO confirmation to re-run rules</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══════════════ §02 DATA FLOW ═══════════════ -->
+<section class="section" id="s02">
+  <div class="section-tag">§ 02</div>
+  <h2>Data Flow — End-to-End</h2>
+  <p class="section-lead">
+    From wizard open to Manufacturing Order creation — every step in the chain.
+  </p>
+
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-side">
+        <div class="flow-num">1</div>
+        <div class="flow-line"></div>
+      </div>
+      <div class="flow-card">
+        <div class="flow-card-title">User opens SO → clicks "Configure Product"</div>
+        <div class="flow-card-desc">The <code>bs.sale.config.wizard</code> action is triggered from the SO line.</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-side">
+        <div class="flow-num">2</div>
+        <div class="flow-line"></div>
+      </div>
+      <div class="flow-card">
+        <div class="flow-card-title">Wizard collects inputs</div>
+        <div class="flow-card-desc">Select Category → Product → BoM. Enter Width / Height / UoM. Optional: Extra Values JSON, กันสาด-specific fields (cloth_method, piece_no, set_name, caught_rate, switch_rate, remote_rate).</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-side">
+        <div class="flow-num">3</div>
+        <div class="flow-line"></div>
+      </div>
+      <div class="flow-card">
+        <div class="flow-card-title"><code>_get_values()</code> builds the values dict</div>
+        <div class="flow-card-desc">Merges standard fields + category fields + custom_values JSON into a single flat dict passed to every rule.</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-side">
+        <div class="flow-num">4</div>
+        <div class="flow-line"></div>
+      </div>
+      <div class="flow-card">
+        <div class="flow-card-title">Preview or Apply runs <code>_compute_bom_lines()</code></div>
+        <div class="flow-card-desc">For each BoM line with <code>use_python_rule=True</code>: <code>RuleEvaluator.evaluate(rule_code, values)</code>. Rule sets <code>result</code>, optional <code>product_name</code> and <code>product_attributes</code>.</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-side">
+        <div class="flow-num">5</div>
+        <div class="flow-line"></div>
+      </div>
+      <div class="flow-card">
+        <div class="flow-card-title"><code>action_apply()</code> writes to <code>sale.order.line</code></div>
+        <div class="flow-card-desc">Saves <code>bs_config_json</code> (raw input), <code>bs_config_attributes</code> (variant attrs), <code>bs_config_log</code> (breakdown), <code>bs_config_name</code> (product name). State set to <code>'configured'</code>.</div>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-side">
+        <div class="flow-num">6</div>
+        <div class="flow-line"></div>
+      </div>
+      <div class="flow-card">
+        <div class="flow-card-title">User confirms SO → <code>action_confirm()</code></div>
+        <div class="flow-card-desc">BS lines processed <em>before</em> <code>super()</code> to avoid lock. Re-runs rules from stored JSON → <code>_bs_find_or_create_variant()</code> → creates <code>mrp.production</code> with computed move_raw_ids → inserts component SO lines (price=0).</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="img-grid">
+    <div class="img-block">
+      <img src="Image_tutorial/Before_set_paratmeter.png" alt="Configure Product wizard — before any parameters are set" onclick="openLightbox(this)">
+      <div class="img-caption">Wizard before parameters are entered</div>
+    </div>
+    <div class="img-block">
+      <img src="Image_tutorial/After_set_paratmeter.png" alt="Configure Product wizard — after parameters set, showing 6 computed components in Preview" onclick="openLightbox(this)">
+      <div class="img-caption">After parameters set — Preview shows 6 computed components</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ §03 PRODUCT SETUP ═══════════════ -->
+<section class="section" id="s03">
+  <div class="section-tag">§ 03</div>
+  <h2>Product Template Setup</h2>
+  <p class="section-lead">
+    Choose between two approaches depending on whether your product dimensions
+    are arbitrary values or a fixed set of options.
+  </p>
+
+  <h3>3A — Dimension-based product (arbitrary W×H)</h3>
+  <p><strong>Example:</strong> กันสาด Master, Roman Shade Master</p>
+  <ul>
+    <li><strong>No pre-defined attributes needed</strong> on the template.</li>
+    <li>The Python rule sets <code>product_attributes</code> with computed dimension values.</li>
+    <li><code>_bs_find_or_create_variant</code> creates <code>product.attribute</code> records dynamically with <code>create_variant='dynamic'</code>.</li>
+    <li>Each unique configuration (300×250cm กลับ) gets its own <code>product.product</code>.</li>
+  </ul>
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-lang"><span>TEXT</span>Odoo Setup</span>
+      <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+    </div>
+    <pre><code class="language-plaintext">Product Template: กันสาด Master
+  Type:     Storable Product
+  Category: สินค้าสั่งผลิต / กันสาด   ← must have display_product = True
+  UoM:      ชิ้น
+  Attributes: (leave empty — created automatically at confirmation)
+  BoM:      (create one — see Section 4)</code></pre>
+  </div>
+
+  <h3>3B — Finite-option product (Color / Lining / Header)</h3>
+  <p><strong>Example:</strong> Roman Shade with pre-set color options</p>
+  <ul>
+    <li>Pre-define <code>product.attribute</code> records for each option dimension.</li>
+    <li>Add them to the template's attribute lines with all allowed values.</li>
+    <li>The Python rule sets <code>product_attributes</code> using the chosen option names.</li>
+    <li>Matching variant is found (or created for new combos).</li>
+  </ul>
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-lang"><span>TEXT</span>Odoo Setup</span>
+      <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+    </div>
+    <pre><code class="language-plaintext">Product Attribute "สี" (Color):
+  create_variant = always
+  Values: เทา (Grey), ขาว (White), น้ำเงิน (Navy)
+
+Product Attribute "Lining":
+  create_variant = always
+  Values: Standard, Blackout, Thermal
+
+Product Template: Roman Shade Premium
+  Attributes:
+    └── สี      → เทา, ขาว, น้ำเงิน
+    └── Lining  → Standard, Blackout, Thermal
+
+This gives 3×3 = 9 pre-created variants.
+Rule sets: product_attributes = {"สี": "เทา", "Lining": "Blackout"}
+→ variant Roman Shade Premium (เทา / Blackout) is found and used.</code></pre>
+  </div>
+
+  <h3>When to use which approach</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Situation</th><th>Approach</th></tr></thead>
+      <tbody>
+        <tr><td>Dimensions are arbitrary (any cm value)</td><td><span class="tag-pill tag-coral">3A</span> Dynamic attrs, created at runtime</td></tr>
+        <tr><td>Options are a fixed known set (colors, styles)</td><td><span class="tag-pill tag-blue">3B</span> Pre-defined attrs on template</td></tr>
+        <tr><td>Mix: arbitrary size + fixed finish</td><td><span class="tag-pill tag-green">Both</span> Rule sets both kinds of attrs</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="img-grid">
+    <div class="img-block">
+      <img src="Image_tutorial/Product_template with variant.png" alt="Product template Variants tab showing auto-created attributes" onclick="openLightbox(this)">
+      <div class="img-caption">Variants tab — attributes auto-created by the system</div>
+    </div>
+    <div class="img-block">
+      <img src="Image_tutorial/Product_variant_with_attribute_after_confirmed.png" alt="Individual product variant with attributes after SO confirmation" onclick="openLightbox(this)">
+      <div class="img-caption">Individual variant created at SO confirmation</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ §04 BOM SETUP ═══════════════ -->
+<section class="section" id="s04">
+  <div class="section-tag">§ 04</div>
+  <h2>Bill of Materials Setup</h2>
+  <p class="section-lead">
+    Each BoM line becomes one Python rule. Rules run in sequence order — later
+    rules can read <code>prev_result</code> from the preceding rule.
+  </p>
+
+  <h3>Create the BoM</h3>
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-lang"><span>TEXT</span>Navigation</span>
+      <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+    </div>
+    <pre><code class="language-plaintext">Inventory → Bills of Materials → New
+  Product:   กันสาด Master   (product template)
+  BoM Type:  Manufacture
+  Quantity:  1.0</code></pre>
+  </div>
+
+  <h3>Add BoM Lines</h3>
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-lang"><span>TEXT</span>BoM Line Configuration</span>
+      <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+    </div>
+    <pre><code class="language-plaintext">Line  Seq  Product                   Use Python Rule
+────  ───  ────────────────────────  ───────────────
+1     10   TEST - KS Awning Fabric   ✓  (set product_name + product_attributes here)
+2     20   TEST - KS Frame Aluminum  ✓
+3     30   TEST - KS Motor Unit      ✓
+4     40   TEST - KS Switch          ✓  (conditional — only if piece_no == 1)
+5     50   TEST - KS Remote Control  ✓  (conditional)
+6     60   TEST - KS Center Catch    ✓  (conditional)</code></pre>
+  </div>
+
+  <div class="callout info">
+    <div class="callout-icon">ℹ</div>
+    <div class="callout-body">
+      <div class="callout-title">Where to set product_name</div>
+      <p>Rule on <strong>Line 1</strong> is the right place to set <code>product_name</code> and <code>product_attributes</code>. Later lines receive the same <code>values</code> dict so they can also contribute to attrs — the caller does <code>product_attributes.update(attrs)</code> per line.</p>
+    </div>
+  </div>
+
+  <div class="img-grid">
+    <div class="img-block">
+      <img src="Image_tutorial/BOM_with_py_rule.png" alt="BoM form with all 6 lines having Py Rule checkbox ticked" onclick="openLightbox(this)">
+      <div class="img-caption">BoM with Python Rule enabled on all lines</div>
+    </div>
+    <div class="img-block">
+      <img src="Image_tutorial/BOM_SO_Tab.png" alt="BoM for Sales Order tab with configured line and breakdown" onclick="openLightbox(this)">
+      <div class="img-caption">BoM — Sales Order tab showing configured line</div>
+    </div>
+  </div>
+
+  <div class="img-grid">
+    <div class="img-block">
+      <img src="Image_tutorial/SO_order_line_after_confirmed.png" alt="Confirmed Sales Order with component sub-lines at price 0" onclick="openLightbox(this)">
+      <div class="img-caption">Confirmed SO — component lines inserted (price = 0)</div>
+    </div>
+    <div class="img-block">
+      <img src="Image_tutorial/MO_after_comfirmed.png" alt="Manufacturing Order WH/MO/00272 with 6 components" onclick="openLightbox(this)">
+      <div class="img-caption">Manufacturing Order created automatically with 6 components</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ §05 PYTHON RULE API ═══════════════ -->
+<section class="section" id="s05">
+  <div class="section-tag">§ 05</div>
+  <h2>Python Rule API Reference</h2>
+  <p class="section-lead">
+    Each rule is Python code that runs inside a restricted sandbox. The following
+    variables are pre-injected and available by name.
+  </p>
+
+  <h3>Input variables (read-only)</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Variable</th><th>Type</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>values</td><td>dict</td><td>All wizard inputs. See keys below.</td></tr>
+        <tr><td>line</td><td>mrp.bom.line</td><td>Current BoM line record. <code>line.product_id</code>, <code>line.product_uom_id</code>, <code>line.sequence</code></td></tr>
+        <tr><td>bom</td><td>mrp.bom</td><td>The BoM record. <code>bom.product_tmpl_id</code>, <code>bom.product_qty</code></td></tr>
+        <tr><td>product</td><td>product.template</td><td>Same as <code>bom.product_tmpl_id</code></td></tr>
+        <tr><td>base_product</td><td>product.template</td><td>Original base product (same as <code>product</code> in most cases)</td></tr>
+        <tr><td>prev_result</td><td>list[dict]</td><td>Normalized output of the <strong>previous</strong> BoM line (empty for line 1)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3><code>values</code> dict — standard keys</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Key</th><th>Type</th><th>Source</th></tr></thead>
+      <tbody>
+        <tr><td>values['width']</td><td>float</td><td>Width field in wizard</td></tr>
+        <tr><td>values['height']</td><td>float</td><td>Height field in wizard</td></tr>
+        <tr><td>values['uom']</td><td>str</td><td>Unit field (<code>'cm'</code>, <code>'mm'</code>, <code>'m'</code>)</td></tr>
+        <tr><td><em>(any key)</em></td><td>any</td><td>Keys from <code>custom_values</code> JSON are merged in</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3><code>values</code> dict — กันสาด-specific keys</h3>
+  <p style="margin-bottom:12px;font-size:.85rem;color:var(--text-muted)">Only present when category = กันสาด</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Key</th><th>Type</th><th>Values</th></tr></thead>
+      <tbody>
+        <tr><td>values['cloth_method']</td><td>str</td><td><code>'front'</code> / <code>'back'</code></td></tr>
+        <tr><td>values['piece_no']</td><td>str</td><td><code>'1'</code> / <code>'2'</code> / <code>'3'</code></td></tr>
+        <tr><td>values['set_name']</td><td>str</td><td><code>'1'</code> … <code>'10'</code></td></tr>
+        <tr><td>values['caught_rate']</td><td>str</td><td>Name of selected caught.rate (absent if not selected)</td></tr>
+        <tr><td>values['caught_rate_id']</td><td>int</td><td>DB id of caught.rate</td></tr>
+        <tr><td>values['switch_rate']</td><td>str</td><td>Name of selected switch.rate</td></tr>
+        <tr><td>values['switch_rate_id']</td><td>int</td><td>DB id</td></tr>
+        <tr><td>values['remote_rate']</td><td>str</td><td>Name of selected remote.rate</td></tr>
+        <tr><td>values['remote_rate_id']</td><td>int</td><td>DB id</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Output variables (rule MUST/CAN set)</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Variable</th><th>Required</th><th>Type</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td>result</td><td><span class="tag-pill tag-coral">MUST</span></td><td>list[dict]</td><td>Component lines produced by this rule</td></tr>
+        <tr><td>product_name</td><td><span class="tag-pill tag-warm">optional</span></td><td>str</td><td>Sets <code>bs_config_name</code> and SO line <code>name</code></td></tr>
+        <tr><td>product_attributes</td><td><span class="tag-pill tag-warm">optional</span></td><td>dict[str, str]</td><td>Drives <code>product.product</code> variant creation</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3><code>result</code> item format</h3>
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-lang"><span>PYTHON</span>result item</span>
+      <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+    </div>
+    <pre><code class="language-python">result = [
+    {
+        'product_id': line.product_id.id,   # preferred — exact product
+        'name':       'My Component',        # display name (can differ from product.name)
+        'qty':        2.5,
+        'uom_id':     line.product_uom_id.id,
+    },
+    # OR minimal — resolved by name search:
+    {'name': 'TEST - KS Motor Unit', 'qty': 1},
+    # OR by internal reference:
+    {'default_code': 'KS-MTR-001', 'qty': 1},
+]
+
+result = []  # valid — line produces no component (conditional exclusion)</code></pre>
+  </div>
+
+  <h3>Safe built-ins available in rules</h3>
+  <div class="callout note">
+    <div class="callout-icon">⚡</div>
+    <div class="callout-body">
+      <div class="callout-title">Allowed</div>
+      <p><code>abs</code>, <code>all</code>, <code>any</code>, <code>bool</code>, <code>dict</code>, <code>enumerate</code>, <code>float</code>, <code>int</code>, <code>isinstance</code>, <code>len</code>, <code>list</code>, <code>map</code>, <code>max</code>, <code>min</code>, <code>range</code>, <code>round</code>, <code>set</code>, <code>sorted</code>, <code>str</code>, <code>sum</code>, <code>tuple</code>, <code>type</code>, <code>zip</code></p>
+      <p style="margin-top:8px"><strong>Not available:</strong> <code>import</code>, <code>open</code>, <code>eval</code>, <code>exec</code>, <code>os</code>, <code>sys</code>, any dunder attribute.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ §06 SAMPLE RULES ═══════════════ -->
+<section class="section" id="s06">
+  <div class="section-tag">§ 06</div>
+  <h2>Sample Rules — Simple to Advanced</h2>
+  <p class="section-lead">
+    Nine progressively complex rules covering the most common BoM line scenarios.
+  </p>
+
+  <!-- Rule A -->
+  <div class="rule-card">
+    <div class="rule-card-header">
+      <div class="rule-letter">A</div>
+      <div>
+        <div class="rule-title">Basic linear calculation</div>
+        <div class="rule-desc">Fabric area from width × height, with UoM conversion</div>
+      </div>
+    </div>
+    <div class="rule-body">
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang"><span>PYTHON</span>Rule A</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <pre><code class="language-python">w   = float(values.get('width',  0))
+h   = float(values.get('height', 0))
+uom = values.get('uom', 'cm')
+
+# Normalise to cm
+if uom == 'mm':
+    w /= 10;  h /= 10
+elif uom == 'm':
+    w *= 100; h *= 100
+
+w_m = w / 100
+h_m = h / 100
+
+fabric_area = round(w_m * h_m, 3)
+
+result = [{
+    'product_id': line.product_id.id,
+    'name':       line.product_id.name,
+    'qty':        fabric_area,
+    'uom_id':     line.product_uom_id.id,
+}]</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rule B -->
+  <div class="rule-card">
+    <div class="rule-card-header">
+      <div class="rule-letter">B</div>
+      <div>
+        <div class="rule-title">Set product name + attributes (dimension-based variant)</div>
+        <div class="rule-desc">Line 1 of any dimension-based product — creates a unique variant at SO confirmation</div>
+      </div>
+    </div>
+    <div class="rule-body">
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang"><span>PYTHON</span>Rule B</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <pre><code class="language-python">w   = float(values.get('width',  0))
+h   = float(values.get('height', 0))
+uom = values.get('uom', 'cm')
+
+if uom == 'mm':
+    w /= 10;  h /= 10
+elif uom == 'm':
+    w *= 100; h *= 100
+
+w_disp = int(w) if w == int(w) else w
+h_disp = int(h) if h == int(h) else h
+
+# ── Product name (written to SO line.name) ──────────────────────
+product_name = f"Roman Shade {w_disp}×{h_disp}{uom}"
+
+# ── Product attributes → each key becomes a product.attribute ───
+# create_variant='dynamic' prevents auto-generating all combinations.
+product_attributes = {
+    'กว้าง': f'{w_disp}{uom}',
+    'สูง':   f'{h_disp}{uom}',
+}
+
+# Fabric qty
+w_m = w / 100
+h_m = h / 100
+result = [{
+    'product_id': line.product_id.id,
+    'name':       line.product_id.name,
+    'qty':        round(w_m * h_m, 3),
+    'uom_id':     line.product_uom_id.id,
+}]</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rule C -->
+  <div class="rule-card">
+    <div class="rule-card-header">
+      <div class="rule-letter">C</div>
+      <div>
+        <div class="rule-title">Set attributes from finite options (Color / Lining)</div>
+        <div class="rule-desc">For products where attributes are pre-defined on the template</div>
+      </div>
+    </div>
+    <div class="rule-body">
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang"><span>PYTHON</span>Rule C</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <pre><code class="language-python"># custom_values JSON in wizard: {"color": "เทา", "lining": "Blackout"}
+color  = values.get('color',  '')
+lining = values.get('lining', '')
+
+product_name = f"Roman Shade {color} {lining}".strip()
+
+product_attributes = {}
+if color:
+    product_attributes['สี'] = color         # must match attribute name on template
+if lining:
+    product_attributes['Lining'] = lining    # must match attribute name on template
+
+result = [{
+    'product_id': line.product_id.id,
+    'name':       line.product_id.name,
+    'qty':        1,
+    'uom_id':     line.product_uom_id.id,
+}]</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rule D -->
+  <div class="rule-card">
+    <div class="rule-card-header">
+      <div class="rule-letter">D</div>
+      <div>
+        <div class="rule-title">Conditional component</div>
+        <div class="rule-desc">Include only when a condition is met — Switch added only for single-piece orders</div>
+      </div>
+    </div>
+    <div class="rule-body">
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang"><span>PYTHON</span>Rule D</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <pre><code class="language-python">piece_no    = int(values.get('piece_no', '1') or 1)
+switch_rate = values.get('switch_rate', '')   # absent if user did not select
+
+if piece_no == 1 and switch_rate:
+    result = [{
+        'product_id': line.product_id.id,
+        'name':       f'{line.product_id.name} ({switch_rate})',
+        'qty':        1,
+        'uom_id':     line.product_uom_id.id,
+    }]
+else:
+    result = []   # no component — line produces nothing</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rule E -->
+  <div class="rule-card">
+    <div class="rule-card-header">
+      <div class="rule-letter">E</div>
+      <div>
+        <div class="rule-title">Using <code>prev_result</code> (chain calculation)</div>
+        <div class="rule-desc">Line 3 computes lining area based on the total fabric area returned by Line 2</div>
+      </div>
+    </div>
+    <div class="rule-body">
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang"><span>PYTHON</span>Rule E</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <pre><code class="language-python"># prev_result is the normalized output of the immediately preceding BoM line
+# Each item is a dict: {"name": ..., "qty": ..., "product_id": ..., "uom_id": ...}
+
+total_fabric_sqm = sum(item['qty'] for item in prev_result) if prev_result else 0
+
+# Lining = fabric × 1.1 (10% extra allowance)
+lining_area = round(total_fabric_sqm * 1.1, 3)
+
+result = [{
+    'product_id': line.product_id.id,
+    'name':       line.product_id.name,
+    'qty':        lining_area,
+    'uom_id':     line.product_uom_id.id,
+}]</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rule F -->
+  <div class="rule-card">
+    <div class="rule-card-header">
+      <div class="rule-letter">F</div>
+      <div>
+        <div class="rule-title">Multiple output components from one rule</div>
+        <div class="rule-desc">One rule returns both main material and waste — useful for cutting formulas</div>
+      </div>
+    </div>
+    <div class="rule-body">
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang"><span>PYTHON</span>Rule F</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <pre><code class="language-python">w_m = float(values.get('width', 0)) / 100
+h_m = float(values.get('height', 0)) / 100
+area = round(w_m * h_m, 3)
+
+fabric_id  = line.product_id.id
+fabric_uom = line.product_uom_id.id
+
+# Resolver tries: product_id → default_code → name
+result = [
+    {
+        'product_id': fabric_id,
+        'name':       line.product_id.name,
+        'qty':        area,
+        'uom_id':     fabric_uom,
+    },
+    {
+        'default_code': 'KS-WASTE-FAB',    # resolved by internal reference
+        'name':         'Fabric Waste',
+        'qty':          round(area * 0.05, 3),  # 5% waste
+        'uom_id':       fabric_uom,
+    },
+]</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rule G -->
+  <div class="rule-card">
+    <div class="rule-card-header">
+      <div class="rule-letter">G</div>
+      <div>
+        <div class="rule-title">Track-length formula (perimeter + overlap)</div>
+        <div class="rule-desc">Frame aluminum: full perimeter + corner overlap allowance × piece count</div>
+      </div>
+    </div>
+    <div class="rule-body">
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang"><span>PYTHON</span>Rule G</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <pre><code class="language-python">w   = float(values.get('width',  0))
+h   = float(values.get('height', 0))
+uom = values.get('uom', 'cm')
+
+if uom == 'mm':
+    w /= 10;  h /= 10
+elif uom == 'm':
+    w *= 100; h *= 100
+
+w_m = w / 100
+h_m = h / 100
+piece_no = int(values.get('piece_no', '1') or 1)
+
+# Perimeter per piece + 4 × 5cm corner cut allowance
+perimeter   = (w_m * 2 + h_m * 2) + 4 * 0.05
+total_frame = round(perimeter * piece_no, 3)
+
+result = [{
+    'product_id': line.product_id.id,
+    'name':       line.product_id.name,
+    'qty':        total_frame,
+    'uom_id':     line.product_uom_id.id,
+}]</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rule H -->
+  <div class="rule-card">
+    <div class="rule-card-header">
+      <div class="rule-letter">H</div>
+      <div>
+        <div class="rule-title">Rate lookup + surcharge</div>
+        <div class="rule-desc">Adds a size-based surcharge component when area exceeds a threshold</div>
+      </div>
+    </div>
+    <div class="rule-body">
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang"><span>PYTHON</span>Rule H</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <pre><code class="language-python">w   = float(values.get('width',  0))
+h   = float(values.get('height', 0))
+uom = values.get('uom', 'cm')
+
+if uom == 'mm':
+    w /= 10;  h /= 10
+elif uom == 'm':
+    w *= 100; h *= 100
+
+area_sqm         = round((w / 100) * (h / 100), 3)
+piece_no         = int(values.get('piece_no', '1') or 1)
+caught_rate_name = values.get('caught_rate', '')
+
+result = []
+
+if caught_rate_name and piece_no == 1:
+    set_name = int(values.get('set_name', '1') or 1)
+    result.append({
+        'product_id': line.product_id.id,
+        'name':       f'{line.product_id.name} ({caught_rate_name})',
+        'qty':        set_name,
+        'uom_id':     line.product_uom_id.id,
+    })
+    # Size-based surcharge: extra unit if area > 4 m²
+    if area_sqm > 4.0:
+        result.append({
+            'product_id': line.product_id.id,
+            'name':       f'{line.product_id.name} — Large Size Surcharge',
+            'qty':        1,
+            'uom_id':     line.product_uom_id.id,
+        })</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rule I -->
+  <div class="rule-card">
+    <div class="rule-card-header">
+      <div class="rule-letter">I</div>
+      <div>
+        <div class="rule-title">Full กันสาด Line 1 (production-grade)</div>
+        <div class="rule-desc">Sets product_name, product_attributes, and fabric qty — all in one rule</div>
+      </div>
+    </div>
+    <div class="rule-body">
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-lang"><span>PYTHON</span>Rule I — Production Grade</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <pre><code class="language-python">w   = float(values.get('width',  0))
+h   = float(values.get('height', 0))
+uom = values.get('uom', 'cm')
+
+if uom == 'mm':
+    w /= 10;  h /= 10
+elif uom == 'm':
+    w *= 100; h *= 100
+
+w_m = w / 100
+h_m = h / 100
+
+cloth_method = values.get('cloth_method', 'front')
+cloth_label  = 'กลับ' if cloth_method == 'back' else 'ไม่กลับ'
+multiplier   = 1.05  if cloth_method == 'back' else 1.0
+
+piece_no    = int(values.get('piece_no', '1') or 1)
+set_name    = int(values.get('set_name', '1') or 1)
+fabric_area = round(w_m * h_m * multiplier * piece_no, 3)
+
+w_disp = int(w) if w == int(w) else w
+h_disp = int(h) if h == int(h) else h
+
+# ── Product name ────────────────────────────────────────────────
+product_name = f"กันสาด {w_disp}×{h_disp}{uom} {cloth_label} {piece_no}ชิ้น"
+
+# ── Variant attributes (dynamic — auto-created if missing) ──────
+product_attributes = {
+    'กว้าง':      f'{w_disp}{uom}',
+    'สูง':        f'{h_disp}{uom}',
+    'หน้าผ้า':    cloth_label,
+    'จำนวนชิ้น': f'{piece_no} ชิ้น',
+}
+
+# ── Component ───────────────────────────────────────────────────
+result = [{
+    'product_id': line.product_id.id,
+    'name':       line.product_id.name,
+    'qty':        fabric_area,
+    'uom_id':     line.product_uom_id.id,
+}]</code></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ §07 CATEGORY PARAMETERS ═══════════════ -->
+<section class="section" id="s07">
+  <div class="section-tag">§ 07</div>
+  <h2>Category-Specific Parameters</h2>
+  <p class="section-lead">
+    The wizard can show dedicated sections based on the selected product category.
+    The กันสาด pattern is the reference implementation.
+  </p>
+
+  <h3>How category sections are triggered</h3>
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-lang"><span>PYTHON</span>bs.sale.config.wizard</span>
+      <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+    </div>
+    <pre><code class="language-python"># _compute_bs_categ_group
+if 'กันสาด' in (rec.product_categ_id.name or ''):
+    rec.bs_categ_group = 'kansad'</code></pre>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-lang"><span>XML</span>View attrs</span>
+      <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+    </div>
+    <pre><code class="language-xml">&lt;group string="กันสาด — Awning Options"
+       attrs="{'invisible': [('bs_categ_group', '!=', 'kansad')]}"&gt;</code></pre>
+  </div>
+
+  <h3>Adding a new category section (e.g. ม่านโรมัน)</h3>
+  <ol>
+    <li>Add a new <code>bs_categ_group</code> value (e.g. <code>'roman'</code>) in <code>_compute_bs_categ_group</code></li>
+    <li>Add wizard fields for the new parameters</li>
+    <li>Pack them into <code>_get_values()</code> when <code>bs_categ_group == 'roman'</code></li>
+    <li>Add the XML section with <code>attrs="{'invisible': [('bs_categ_group', '!=', 'roman')]}"</code></li>
+    <li>Update <code>_build_config_log</code> / <code>_bs_refresh_config</code> header logic if needed</li>
+  </ol>
+</section>
+
+<!-- ═══════════════ §08 TIPS & GOTCHAS ═══════════════ -->
+<section class="section" id="s08">
+  <div class="section-tag">§ 08</div>
+  <h2>Tips, Gotchas &amp; Best Practices</h2>
+
+  <div class="callout gotcha">
+    <div class="callout-icon">▲</div>
+    <div class="callout-body">
+      <div class="callout-title">Gotcha — Use <code>values.get()</code> not <code>values[]</code></div>
+      <p>Rate fields (<code>caught_rate</code>, <code>switch_rate</code>, <code>remote_rate</code>) are only present in <code>values</code> when the user actually selected them. Direct key access raises <code>KeyError</code>.</p>
+    </div>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-lang"><span>PYTHON</span>Correct vs Wrong</span>
+      <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+    </div>
+    <pre><code class="language-python"># ✓ CORRECT
+caught = values.get('caught_rate', '')
+
+# ✗ WRONG — raises KeyError when user did not select a rate
+caught = values['caught_rate']</code></pre>
+  </div>
+
+  <div class="callout tip">
+    <div class="callout-icon">✓</div>
+    <div class="callout-body">
+      <div class="callout-title">Tip — <code>result = []</code> is valid</div>
+      <p>Returning an empty list means this line contributes no components. The resolver skips empty results cleanly. Use it for conditional components.</p>
+    </div>
+  </div>
+
+  <h3><code>product_attributes</code> is accumulated across all lines</h3>
+  <p>Each BoM line can contribute to <code>product_attributes</code>. The caller does:</p>
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-lang"><span>PYTHON</span>Accumulation pattern</span>
+      <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+    </div>
+    <pre><code class="language-python">if attrs:
+    product_attributes.update(attrs)   # later lines can override earlier ones</code></pre>
+  </div>
+  <p>A later line can <strong>add or override</strong> attributes set by an earlier line.</p>
+
+  <div class="callout info">
+    <div class="callout-icon">ℹ</div>
+    <div class="callout-body">
+      <div class="callout-title">product_name — last non-empty wins</div>
+      <p>Same accumulation pattern. Only set it on the line where the naming logic lives (typically Line 1). Avoid setting it on multiple lines.</p>
+    </div>
+  </div>
+
+  <h3>Dynamic attributes use <code>create_variant='dynamic'</code></h3>
+  <p>When <code>_bs_find_or_create_variant</code> creates a new <code>product.attribute</code>, it uses <code>create_variant='dynamic'</code>. Odoo will <strong>not</strong> auto-generate all W×H combinations — variants are created only when explicitly configured.</p>
+
+  <h3>Variant reuse on repeated configurations</h3>
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-lang"><span>TEXT</span>Variant reuse</span>
+      <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+    </div>
+    <pre><code class="language-plaintext">SO #1  W=300, H=250 → creates variant id=1001 (กว้าง=300cm / สูง=250cm)
+SO #2  W=300, H=250 → finds  variant id=1001  ← same, reused
+SO #3  W=400, H=200 → creates variant id=1002 (กว้าง=400cm / สูง=200cm)</code></pre>
+  </div>
+
+  <div class="callout gotcha">
+    <div class="callout-icon">▲</div>
+    <div class="callout-body">
+      <div class="callout-title">Gotcha — Pre-defined attributes for finite option sets</div>
+      <p>If you use finite options (Color, Lining), pre-define the attribute + values on the template <strong>before</strong> any SO is configured. If the rule returns an attribute value that is not on the template, a <code>UserError</code> is raised at confirmation.</p>
+    </div>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-lang"><span>PYTHON</span>Finite option safety</span>
+      <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+    </div>
+    <pre><code class="language-python"># ✗ This will fail if 'เทา' is not pre-defined on the template:
+product_attributes = {'สี': 'เทา'}
+
+# ✓ Either pre-define 'เทา' on the template, OR
+#   use dynamic attributes and let the system create the value automatically.</code></pre>
+  </div>
+
+  <div class="callout tip">
+    <div class="callout-icon">✓</div>
+    <div class="callout-body">
+      <div class="callout-title">Tip — Debugging rules</div>
+      <p>Use <strong>Preview</strong> in the wizard — it runs all rules and shows the component breakdown without writing to the SO. Any <code>UserError</code> from a rule is caught and displayed. Also check <code>mrp.bom.line.last_compute_log</code> — the evaluator writes the execution log back to the BoM line after every run.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ §09 AI PROMPT GUIDE ═══════════════ -->
+<section class="section" id="s09">
+  <div class="section-tag">§ 09</div>
+  <h2>AI Prompt Guide — Writing Python Rules with AI</h2>
+  <p class="section-lead">
+    AI assistants (Claude, GPT-4, etc.) can write excellent BoM rules — but only
+    when given precise context about the sandbox, available variables, and expected
+    output format. This section gives you the exact prompts and context blocks to use.
+  </p>
+
+  <div class="callout info">
+    <div class="callout-icon">ℹ</div>
+    <div class="callout-body">
+      <div class="callout-title">Why context matters</div>
+      <p>A raw prompt like <em>"write me a BoM rule for curtains"</em> produces generic Python that uses <code>import math</code>, accesses <code>values['width']</code> directly (KeyError risk), and returns a plain float instead of the required <code>list[dict]</code>. The context block below fixes all of this.</p>
+    </div>
+  </div>
+
+  <h3>Step 1 — Copy this context block into every AI session</h3>
+  <div class="prompt-box">
+    <div class="prompt-box-label">Context block — paste into Claude / ChatGPT</div>
+    <div class="code-block" style="margin:0">
+      <div class="code-header">
+        <span class="code-lang"><span>TEXT</span>AI Context Block</span>
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre><code class="language-plaintext">You are writing Python rules for the BS Dynamic BoM module in Odoo 14.
+Rules run inside a sandboxed evaluator — no imports allowed.
+
+═══ INJECTED VARIABLES ═══
+values        dict   — all wizard inputs (see keys below)
+line          mrp.bom.line record   — line.product_id, line.product_uom_id, line.sequence
+bom           mrp.bom record        — bom.product_tmpl_id, bom.product_qty
+product       product.template      — same as bom.product_tmpl_id
+prev_result   list[dict]            — normalized output of the PREVIOUS BoM line ([] for line 1)
+
+═══ STANDARD values KEYS ═══
+values.get('width',  0)   → float  (wizard width input)
+values.get('height', 0)   → float  (wizard height input)
+values.get('uom', 'cm')   → str    ('cm' | 'mm' | 'm')
+Any key in custom_values JSON is also present.
+
+═══ กันสาด-SPECIFIC values KEYS (only when category = กันสาด) ═══
+values.get('cloth_method', 'front')  → 'front' | 'back'
+values.get('piece_no',     '1')      → str '1'/'2'/'3'
+values.get('set_name',     '1')      → str '1'...'10'
+values.get('caught_rate',  '')       → rate name (absent if not selected)
+values.get('switch_rate',  '')       → rate name (absent if not selected)
+values.get('remote_rate',  '')       → rate name (absent if not selected)
+
+═══ OUTPUT VARIABLES ═══
+result              list[dict]   REQUIRED — component lines produced by this rule
+product_name        str          optional — sets SO line name
+product_attributes  dict[str,str] optional — drives product.product variant creation
+
+═══ result ITEM FORMAT ═══
+{
+  'product_id': line.product_id.id,   # preferred
+  'name':       'Component Name',
+  'qty':        2.5,
+  'uom_id':     line.product_uom_id.id,
+}
+# OR: {'default_code': 'REF-001', 'name': 'Label', 'qty': 1}
+# OR: {'name': 'Exact Product Name', 'qty': 1}
+result = []   # valid — line produces no component
+
+═══ SAFE BUILT-INS ═══
+abs all any bool dict enumerate float int isinstance len list
+map max min range round set sorted str sum tuple type zip
+NOT available: import open eval exec os sys or any __dunder__
+
+═══ RULES ═══
+- ALWAYS use values.get('key', default) — NEVER values['key']
+- Return result as a list of dicts, even for a single component
+- Write functional transforms: read values → compute → return result</code></pre>
+    </div>
+  </div>
+
+  <h3>Step 2 — Use this request template</h3>
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-lang"><span>TEXT</span>Request Template</span>
+      <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+    </div>
+    <pre><code class="language-plaintext">Context: [paste the context block above]
+
+Task: Write a Python rule for BoM line [N] that:
+- [what it should compute]
+- [any conditional logic needed]
+- [any special keys from values used]
+
+Product type: [dimension-based (3A) / finite-option (3B) / both]
+Line number:  [1 / 2 / 3 / ...]   (affects whether prev_result is useful)
+
+Sample values dict for testing:
+{"width": 300, "height": 250, "uom": "cm", ...}
+
+Expected output example:
+[{"product_id": ..., "name": "...", "qty": 6.25, "uom_id": ...}]</code></pre>
+  </div>
+
+  <h3>Worked Example 1 — Fabric area calculation</h3>
+  <div class="callout note">
+    <div class="callout-icon">→</div>
+    <div class="callout-body">
+      <div class="callout-title">Prompt</div>
+      <p>Write a rule for Line 1 that calculates Roman Shade fabric area in m² from width × height (input in cm). Handle mm and m UoM too. Sets product_name as "Roman Shade 300×250cm".</p>
+    </div>
+  </div>
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-lang"><span>PYTHON</span>AI Output — Example 1</span>
+      <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+    </div>
+    <pre><code class="language-python">w   = float(values.get('width',  0))
+h   = float(values.get('height', 0))
+uom = values.get('uom', 'cm')
+
+if uom == 'mm':
+    w /= 10; h /= 10
+elif uom == 'm':
+    w *= 100; h *= 100
+
+w_disp = int(w) if w == int(w) else w
+h_disp = int(h) if h == int(h) else h
+
+product_name = f"Roman Shade {w_disp}×{h_disp}{uom}"
+
+fabric_area = round((w / 100) * (h / 100), 3)
+
+result = [{
+    'product_id': line.product_id.id,
+    'name':       line.product_id.name,
+    'qty':        fabric_area,
+    'uom_id':     line.product_uom_id.id,
+}]</code></pre>
+  </div>
+
+  <h3>Worked Example 2 — Conditional switch component</h3>
+  <div class="callout note">
+    <div class="callout-icon">→</div>
+    <div class="callout-body">
+      <div class="callout-title">Prompt</div>
+      <p>Write a rule for the Switch component. Only include it when piece_no equals 1 AND switch_rate is selected. Name should show the rate name in parentheses.</p>
+    </div>
+  </div>
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-lang"><span>PYTHON</span>AI Output — Example 2</span>
+      <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+    </div>
+    <pre><code class="language-python">piece_no    = int(values.get('piece_no', '1') or 1)
+switch_rate = values.get('switch_rate', '')
+
+if piece_no == 1 and switch_rate:
+    result = [{
+        'product_id': line.product_id.id,
+        'name':       f'{line.product_id.name} ({switch_rate})',
+        'qty':        1,
+        'uom_id':     line.product_uom_id.id,
+    }]
+else:
+    result = []</code></pre>
+  </div>
+
+  <h3>Worked Example 3 — Frame length from prev_result</h3>
+  <div class="callout note">
+    <div class="callout-icon">→</div>
+    <div class="callout-body">
+      <div class="callout-title">Prompt</div>
+      <p>Write a rule for Line 3 (lining). Use prev_result total qty as the base fabric area, then multiply by 1.1 for 10% cutting allowance.</p>
+    </div>
+  </div>
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-lang"><span>PYTHON</span>AI Output — Example 3</span>
+      <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+    </div>
+    <pre><code class="language-python">total_fabric_sqm = sum(item['qty'] for item in prev_result) if prev_result else 0
+lining_area = round(total_fabric_sqm * 1.1, 3)
+
+result = [{
+    'product_id': line.product_id.id,
+    'name':       line.product_id.name,
+    'qty':        lining_area,
+    'uom_id':     line.product_uom_id.id,
+}]</code></pre>
+  </div>
+
+  <h3>Pro Tips for working with AI</h3>
+  <ul>
+    <li><strong>Always specify the line number.</strong> Line 1 is where product_name and product_attributes belong. Line 3+ can use prev_result.</li>
+    <li><strong>Paste a sample values dict.</strong> AI produces much more accurate qty formulas when it can see realistic input numbers.</li>
+    <li><strong>Mention dimension-based vs finite-option.</strong> This tells AI whether to use dynamic attributes or reference pre-defined ones.</li>
+    <li><strong>Ask AI to handle UoM normalization</strong> in every rule that reads width/height — don't assume cm.</li>
+    <li><strong>Test with Preview first.</strong> Use the wizard's Preview button before confirming the SO — rule errors are shown without writing to the order.</li>
+    <li><strong>Check last_compute_log.</strong> After Preview, open the BoM line — the evaluator writes execution details to <code>last_compute_log</code>.</li>
+  </ul>
+
+  <h3>System Prompt for Claude Projects / GPT Custom Instructions</h3>
+  <p>Save this as a custom instruction to avoid pasting context every session:</p>
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-lang"><span>TEXT</span>System Prompt</span>
+      <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+    </div>
+    <pre><code class="language-plaintext">You are an expert at writing Python rules for the BS Dynamic BoM module (Odoo 14).
+
+Rules run in a sandboxed evaluator. Injected variables:
+  values       dict          — wizard inputs; always use .get('key', default)
+  line         mrp.bom.line  — line.product_id, line.product_uom_id
+  bom          mrp.bom       — bom.product_tmpl_id
+  prev_result  list[dict]    — previous line's output ([] for line 1)
+
+Required output:
+  result = [{'product_id': ..., 'name': ..., 'qty': ..., 'uom_id': ...}]
+  result = []   is valid (conditional exclusion)
+
+Optional output:
+  product_name        str          — sets SO line name (Line 1 only, typically)
+  product_attributes  dict[str,str] — drives variant creation
+
+Safe built-ins: abs all any bool dict float int len list max min range round str sum
+NOT available: import open eval exec os sys
+
+When writing rules:
+1. Normalise UoM (cm/mm/m) at the top of every rule using width/height
+2. Use values.get() with defaults everywhere — never values['key']
+3. For dimension-based products: set product_attributes with computed dimension values
+4. For finite-option products: set product_attributes from fixed option values
+5. Return result as list[dict] — never return a plain number or string</code></pre>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="site-footer">
+  <div class="footer-brand">Dynamic BoM Rule — Developer Tutorial</div>
+  <div class="footer-meta">bs_dynamic_bom_sale · Odoo 14 · Basic Solution Co., Ltd. · v14.0.1.0.3</div>
+</footer>
+
+</main>
+
+<!-- LIGHTBOX -->
+<div id="lightbox" onclick="closeLightbox()">
+  <span id="lightbox-close" onclick="closeLightbox()">✕</span>
+  <img id="lightbox-img" src="" alt="">
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>
+hljs.highlightAll();
+
+// ── IntersectionObserver for active TOC ──
+const map = {};
+document.querySelectorAll('#sidebar nav a[href^="#"]').forEach(a => {
+  const id = a.getAttribute('href').slice(1);
+  const el = document.getElementById(id);
+  if (el) map[id] = { a, el };
+});
+
+if (Object.keys(map).length) {
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        Object.values(map).forEach(m => m.a.classList.remove('active'));
+        if (map[e.target.id]) map[e.target.id].a.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-10% 0px -78% 0px' });
+  Object.values(map).forEach(m => obs.observe(m.el));
+}
+
+// ── Copy button ──
+function copyCode(btn) {
+  const pre = btn.closest('.code-block').querySelector('pre');
+  navigator.clipboard.writeText(pre.innerText).then(() => {
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1800);
+  });
+}
+
+// ── Lightbox ──
+function openLightbox(img) {
+  document.getElementById('lightbox-img').src = img.src;
+  document.getElementById('lightbox-img').alt = img.alt;
+  document.getElementById('lightbox').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
+</script>
+</body>
+</html>
