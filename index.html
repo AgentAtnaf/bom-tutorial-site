@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BS Dynamic BoM — Sale Configurator v1.4.0</title>
+<title>BS Dynamic BoM — Sale Configurator v1.5.2</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Playfair+Display:ital,wght@0,700;0,800;1,700;1,800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/base16/material-darker.min.css">
@@ -257,7 +257,7 @@ tbody td:first-child{font-family:'JetBrains Mono',monospace;font-size:.77rem;col
     <div class="side-title">Dynamic BoM<br>Sale Configurator</div>
     <div class="side-sub">Developer &amp; User Tutorial</div>
     <div class="side-badges">
-      <span class="badge badge-coral">v14.0.1.4.0</span>
+      <span class="badge badge-coral">v14.0.1.5.2</span>
       <span class="badge badge-warm">Developer</span>
     </div>
   </div>
@@ -290,7 +290,7 @@ tbody td:first-child{font-family:'JetBrains Mono',monospace;font-size:.77rem;col
   <p class="hero-desc">Python rules on BoM lines compute components from wizard inputs. Variant and Manufacturing Order are created only at SO confirmation — zero pre-created combinatorial variants.</p>
   <div class="hero-meta">
     <div class="hero-meta-item"><div class="hero-meta-label">Module</div><div class="hero-meta-val">bs_dynamic_bom_sale</div></div>
-    <div class="hero-meta-item"><div class="hero-meta-label">Version</div><div class="hero-meta-val">14.0.1.4.0</div></div>
+    <div class="hero-meta-item"><div class="hero-meta-label">Version</div><div class="hero-meta-val">14.0.1.5.2</div></div>
     <div class="hero-meta-item"><div class="hero-meta-label">Platform</div><div class="hero-meta-val">Odoo 14</div></div>
     <div class="hero-meta-item"><div class="hero-meta-label">Depends</div><div class="hero-meta-val">bs_dynamic_bom_rule · mrp</div></div>
   </div>
@@ -351,7 +351,7 @@ tbody td:first-child{font-family:'JetBrains Mono',monospace;font-size:.77rem;col
   <div class="section-tag">§ Demo</div>
   <h2>Interactive Preview Simulator</h2>
   <p class="section-lead">Change dimensions and options to see component quantities recalculate live. Click <strong>Apply to SO</strong> to see the Configured state.</p>
-  <p class="demo-note">Quantities use JavaScript translations of the actual Python rules from §05. The new v1.4.0 universal dispatcher approach is shown in the ม่านม้วน category.</p>
+  <p class="demo-note">Quantities use JavaScript translations of the actual Python rules from §05. The v1.5.0 attr_name-based dispatch approach (Line 10 SKIP set + Line 20 ROLE_ATTRS set) is shown in the ม่านม้วน category.</p>
 
   <div id="d-apply-zone" class="demo-grid">
     <div class="demo-panel">
@@ -608,78 +608,32 @@ env.cr.commit()</code></pre>
 <!-- ═══ §04 ATTRIBUTE VALUE EXTENSIONS ═══ -->
 <section class="section" id="s04">
   <div class="section-tag">§ 04</div>
-  <h2>Attribute Value Extensions</h2>
-  <p class="section-lead">
-    This module extends <code>product.attribute.value</code> with four fields that enable
-    <strong>zero-hardcoding rules</strong>. Configure these in the Odoo UI on any attribute's
-    Values tab — no code change ever needed to add new attribute behaviour.
-  </p>
-  <div class="callout new">
-    <div class="callout-icon">★</div>
-    <div class="callout-body">
-      <div class="callout-title">New in v1.4.0</div>
-      <p>These fields replace hardcoded product IDs and string-based attribute dispatching. The universal dispatcher (Line 10) and role dispatcher (Line 20) in §5 read these fields directly from PAV records.</p>
-    </div>
-  </div>
+  <h2>Attribute Value Extension — <code>component_id</code></h2>
+  <p class="section-lead">This module adds one field to <code>product.attribute.value</code>. All quantity calculation logic lives in the BoM Python rules themselves — not on the PAV record. This keeps the UI simple and all business logic visible in one place.</p>
 
-  <h3>4.1 Extension Fields on <code>product.attribute.value</code></h3>
+  <h3>4.1 Extension Field on <code>product.attribute.value</code></h3>
   <div class="table-wrap">
     <table>
       <thead><tr><th>Field</th><th>Type</th><th>Purpose</th></tr></thead>
       <tbody>
-        <tr><td>component_id</td><td>Many2one product.product</td><td>Default component product for this value</td></tr>
-        <tr><td>bs_value_qty</td><td>Float</td><td>Numeric input to the qty formula (cm, stock length, count)</td></tr>
-        <tr><td>bs_calc_formula</td><td>Selection</td><td>How to calculate component qty</td></tr>
-        <tr><td>bs_bom_role</td><td>Char</td><td>Semantic role tag used by role-dispatch rules</td></tr>
+        <tr><td>component_id</td><td>Many2one product.product</td><td>The component product to use when this attribute value is selected</td></tr>
       </tbody>
     </table>
   </div>
-
-  <h3>4.2 <code>bs_calc_formula</code> Options</h3>
-  <div class="table-wrap">
-    <table>
-      <thead><tr><th>Value</th><th>Formula</th><th>Use case</th></tr></thead>
-      <tbody>
-        <tr><td><em>(blank)</em></td><td><code>qty = 1.0</code></td><td>Simple add-on (1 unit)</td></tr>
-        <tr><td>fixed_qty</td><td><code>qty = bs_value_qty</code></td><td>Fixed count (e.g. 2 connectors)</td></tr>
-        <tr><td>length_fixed</td><td><code>qty (m) = bs_value_qty / 100</code></td><td>Pre-cut chain loop (e.g. 300 cm → 3.0 m)</td></tr>
-        <tr><td>length_height</td><td><code>qty (m) = (2 × H + 50) / 100</code></td><td>Cut-to-order chain based on blind height</td></tr>
-        <tr><td>pieces_width</td><td><code>qty = ⌈width / bs_value_qty⌉</code></td><td>Items cut from stock length by blind width</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <h3>4.3 <code>bs_bom_role</code> Values</h3>
-  <p>PAVs with <code>bs_bom_role</code> set are handled <strong>exclusively by Line 20</strong>. Line 10 skips them to prevent double-counting.</p>
-  <div class="table-wrap">
-    <table>
-      <thead><tr><th>Role tag</th><th>Formula</th><th>Why this role exists</th></tr></thead>
-      <tbody>
-        <tr><td>bracket</td><td><code>qty = bs_value_qty</code></td><td>Same as <code>fixed_qty</code> but isolated in Line 20 for bracket logic</td></tr>
-        <tr><td>bottom_rail</td><td><code>qty = ⌈width / bs_value_qty⌉</code></td><td>Same as <code>pieces_width</code>; centralized with other rail logic</td></tr>
-        <tr><td>side_rail</td><td><code>qty = 2 × ⌈height / bs_value_qty⌉</code></td><td><strong>Requires height + ×2 multiplier</strong> — cannot be expressed by any <code>bs_calc_formula</code> option; genuine reason this role exists</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <h3>4.4 Configuration Example (UI steps)</h3>
-  <p>For a <strong>กลม สีขาว bottom rail</strong> (PAV id=4207):</p>
-  <div class="table-wrap">
-    <table>
-      <thead><tr><th>Field</th><th>Value</th></tr></thead>
-      <tbody>
-        <tr><td>component_id</td><td>product B02-S-5762</td></tr>
-        <tr><td>bs_calc_formula</td><td><span class="formula-tag">pieces_width</span></td></tr>
-        <tr><td>bs_value_qty</td><td>600 (stock length in cm)</td></tr>
-        <tr><td>bs_bom_role</td><td>bottom_rail</td></tr>
-      </tbody>
-    </table>
+  <p>Set it in the Odoo UI on any attribute's <strong>Values</strong> tab. In Python rules, access it via:</p>
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang"><span>PYTHON</span>PAV lookup in rules</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre><code class="language-python">pav = bom.env['product.attribute.value'].search([
+    ('attribute_id.name', '=', attr_name),
+    ('name',              '=', val_name),
+], limit=1)
+component = pav.component_id  # product.product record</code></pre>
   </div>
   <div class="callout tip">
     <div class="callout-icon">✓</div>
     <div class="callout-body">
-      <div class="callout-title">Zero code changes for new attributes</div>
-      <p>Once configured in the UI, the rule adds the correct number of pieces automatically for any width. Adding a new attribute with any behaviour = configure the PAV only. No rule code changes needed.</p>
+      <div class="callout-title">Logic in rules, not in PAV</div>
+      <p>Qty formulas, stock lengths, and role logic are all written as BoM Python rules — the PAV record only stores <em>which</em> product to use. This way you can read the complete component calculation in one place without jumping between UI screens.</p>
     </div>
   </div>
 </section>
@@ -739,21 +693,26 @@ result = []   # valid — this line produces no component</code></pre>
 qty = max(n + (1 if width % stock else 0), 1)</code></pre>
   </div>
 
-  <h3>5.4 Pattern — Universal Formula Dispatcher (Line 10)</h3>
-  <p>The recommended first line in any BoM. Iterates all selected attribute values and dispatches qty by <code>bs_calc_formula</code>. Zero hardcoded attribute names or product IDs.</p>
+  <h3>5.4 Pattern — Formula Dispatcher (Line 10)</h3>
+  <p>Iterates all selected attribute values and dispatches qty by <strong>attribute name</strong>. Role-based attributes (<code>รางล่าง</code>, <code>รางข้าง</code>, <code>ขายื่น</code>) are listed in the <code>SKIP</code> set and handled separately in Line 20.</p>
 
   <div class="rule-card">
     <div class="rule-card-header">
       <div class="rule-letter">10</div>
       <div>
-        <div class="rule-title">Universal Formula Dispatcher</div>
-        <div class="rule-desc">Handles all PAVs with component_id — skips role PAVs (handled by Line 20)</div>
+        <div class="rule-title">Formula Dispatcher</div>
+        <div class="rule-desc">Qty logic hardcoded per attr_name — only pav.component_id is read from PAV</div>
       </div>
     </div>
     <div class="rule-body">
       <div class="code-block">
         <div class="code-header"><span class="code-lang"><span>PYTHON</span>Line 10</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-        <pre><code class="language-python">MEAS = {'width', 'height', 'uom', 'produce_qty', 'cloth_method', 'piece_no', 'set_name'}
+        <pre><code class="language-python"># Line 10 — Formula Dispatcher
+# Qty logic is hardcoded per attribute name; only pav.component_id is used from PAV.
+# Role-based attrs (รางล่าง, รางข้าง, ขายื่น) are handled in Line 20.
+
+SKIP = {'width', 'height', 'uom', 'produce_qty', 'cloth_method', 'piece_no', 'set_name',
+        'รางล่าง', 'รางข้าง', 'ขายื่น'}
 
 w = values.get('width',  0.0)
 h = values.get('height', 0.0)
@@ -762,7 +721,7 @@ PAV    = bom.env['product.attribute.value']
 result = []
 
 for attr_name, val_name in values.items():
-    if attr_name in MEAS or not val_name:
+    if attr_name in SKIP or not val_name or not isinstance(val_name, str):
         continue
 
     pav = PAV.search([
@@ -773,27 +732,32 @@ for attr_name, val_name in values.items():
     if not pav or not pav.component_id:
         continue
 
-    # PAVs with a role are handled by Line 20 — skip to avoid double-counting
-    if pav.bs_bom_role:
-        continue
+    if attr_name == 'สีใบ':
+        # fabric: metres = height / 100
+        qty = round(h / 100.0, 3)
 
-    formula = pav.bs_calc_formula or ''
+    elif attr_name == 'สีรางบน':
+        # top box rail: ceil(width / 580cm stock)
+        stock = 580.0
+        n   = int(w / stock)
+        qty = float(max(n + (1 if w % stock else 0), 1))
 
-    if formula == 'length_fixed':
-        qty = round(pav.bs_value_qty / 100.0, 3) if pav.bs_value_qty > 0 else 0.0
-
-    elif formula == 'length_height':
-        qty = round((h * 2.0 + 50.0) / 100.0, 3)
-
-    elif formula == 'pieces_width':
-        stock = pav.bs_value_qty if pav.bs_value_qty > 0 else 1.0
-        n     = int(w / stock)
-        qty   = float(max(n + (1 if w % stock else 0), 1))
-
-    elif formula == 'fixed_qty':
-        qty = pav.bs_value_qty if pav.bs_value_qty > 0 else 1.0
+    elif attr_name == 'ประเภทโซ่':
+        # loop chain: total length encoded in name "(ทั้งเส้น Y ซม.)" → Y/100 m
+        # extension chain: name starts with "โซ่ต่อ" → (2H + 50) / 100 m
+        if '(ทั้งเส้น' in val_name:
+            try:
+                total_cm = float(val_name.split('(ทั้งเส้น')[1].split('ซม.)')[0].strip())
+                qty = round(total_cm / 100.0, 3)
+            except Exception:
+                qty = 0.0
+        elif 'โซ่ต่อ' in val_name:
+            qty = round((h * 2.0 + 50.0) / 100.0, 3)
+        else:
+            qty = 0.0
 
     else:
+        # ข้อต่อ, สลิง, etc.: fixed qty = 1
         qty = 1.0
 
     if qty > 0:
@@ -805,22 +769,34 @@ for attr_name, val_name in values.items():
       </div>
     </div>
   </div>
+  <div class="callout note">
+    <div class="callout-icon">⚡</div>
+    <div class="callout-body">
+      <div class="callout-title">Chain name convention</div>
+      <p><code>"โซ่วน 150 ซม. (ทั้งเส้น 300 ซม.)"</code> — the total length in cm is always inside <code>(ทั้งเส้น ... ซม.)</code>. Parsing it means no numeric data needs to be stored on the PAV record.</p>
+    </div>
+  </div>
 
   <h3>5.5 Pattern — Role-Based Dispatcher (Line 20)</h3>
-  <p>Handles PAVs with <code>bs_bom_role</code> set — whose qty requires dimensional logic not expressible by the 4 standard formulas.</p>
+  <p>Handles attributes that require dimensional context or a multiplier. The set of role-based attribute names is declared at the top — identified by <code>attr_name</code>, not by any PAV field.</p>
 
   <div class="rule-card">
     <div class="rule-card-header">
       <div class="rule-letter">20</div>
       <div>
         <div class="rule-title">Role-Based Dispatcher</div>
-        <div class="rule-desc">bracket / bottom_rail / side_rail — uses prev_result to prevent duplicates</div>
+        <div class="rule-desc">Handles attrs requiring dimensional logic; identified by attr_name, not PAV field</div>
       </div>
     </div>
     <div class="rule-body">
       <div class="code-block">
         <div class="code-header"><span class="code-lang"><span>PYTHON</span>Line 20</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-        <pre><code class="language-python">MEAS = {'width', 'height', 'uom', 'produce_qty', 'cloth_method', 'piece_no', 'set_name'}
+        <pre><code class="language-python"># Line 20 — Role-Based Dispatcher
+# Handles attrs requiring dimensional logic; identified by attr_name, not PAV field.
+# รางล่าง stock: B02-S-5776-* = 600cm, B02-S-5824-* = 580cm.
+# รางข้าง: 2 × ceil(height / 597cm) — ×2 multiplier is why this line exists.
+
+ROLE_ATTRS = {'รางล่าง', 'รางข้าง', 'ขายื่น'}
 
 w = values.get('width',  0.0)
 h = values.get('height', 0.0)
@@ -829,13 +805,13 @@ PAV         = bom.env['product.attribute.value']
 result      = []
 already_ids = {item.get('product_id') for item in prev_result}
 
-def ceil_qty(length, stock):
+def ceil_div(length, stock):
     stock = stock if stock > 0 else 1.0
     n     = int(length / stock)
     return max(n + (1 if length % stock else 0), 1)
 
 for attr_name, val_name in values.items():
-    if attr_name in MEAS or not val_name or not isinstance(val_name, str):
+    if attr_name not in ROLE_ATTRS or not val_name or not isinstance(val_name, str):
         continue
 
     pav = PAV.search([
@@ -843,32 +819,39 @@ for attr_name, val_name in values.items():
         ('name',              '=', val_name),
     ], limit=1)
 
-    if not pav or not pav.bs_bom_role or not pav.component_id:
+    if not pav or not pav.component_id:
         continue
 
-    role    = pav.bs_bom_role
     comp    = pav.component_id
     comp_id = comp.id
+    code    = comp.default_code or ''
 
-    if role == 'bracket':
-        qty = pav.bs_value_qty or 1.0
-        if comp_id not in already_ids:
-            result.append({'product_id': comp_id, 'name': comp.display_name, 'qty': qty})
-            already_ids.add(comp_id)
+    if attr_name == 'ขายื่น':
+        qty = 1.0
 
-    elif role == 'bottom_rail':
-        qty = float(ceil_qty(w, pav.bs_value_qty))
-        if comp_id not in already_ids:
-            result.append({'product_id': comp_id, 'name': comp.display_name, 'qty': qty})
-            already_ids.add(comp_id)
+    elif attr_name == 'รางล่าง':
+        # stock length varies by product code series
+        stock = 580.0 if '5824' in code else 600.0
+        qty   = float(ceil_div(w, stock))
 
-    elif role == 'side_rail':
-        # 2 channels (left + right), each cut to height
-        qty = float(2 * ceil_qty(h, pav.bs_value_qty))
-        if comp_id not in already_ids:
-            result.append({'product_id': comp_id, 'name': comp.display_name, 'qty': qty})
-            already_ids.add(comp_id)</code></pre>
+    elif attr_name == 'รางข้าง':
+        # 2 vertical channels (left + right), each cut to height
+        qty = float(2 * ceil_div(h, 597.0))
+
+    else:
+        qty = 1.0
+
+    if qty > 0 and comp_id not in already_ids:
+        result.append({'product_id': comp_id, 'name': comp.display_name, 'qty': qty})
+        already_ids.add(comp_id)</code></pre>
       </div>
+    </div>
+  </div>
+  <div class="callout tip">
+    <div class="callout-icon">✓</div>
+    <div class="callout-body">
+      <div class="callout-title">already_ids prevents duplicates</div>
+      <p><code>already_ids</code> prevents the same component appearing twice when multiple PAV values resolve to the same product (e.g. two color options sharing one component).</p>
     </div>
   </div>
 
@@ -940,32 +923,38 @@ else:
     <div class="rule-body">
       <div class="code-block">
         <div class="code-header"><span class="code-lang"><span>PYTHON</span>Line 30</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-        <pre><code class="language-python">w = int(values.get('width',  0))
+        <pre><code class="language-python"># Line 30 — Product Name Builder + Variant Attributes
+w = int(values.get('width',  0))
 h = int(values.get('height', 0))
 u = values.get('uom', 'cm')
 
-top_color  = values.get('สีรางบน', '')
+top_color  = values.get('สีรางบน',    '')
 chain_type = values.get('ประเภทโซ่', '')
+sii_bai    = values.get('สีใบ',       '')
+# ... read other attributes ...
 
-# Resolve chain label via PAV bs_value_qty (no hardcoded string parsing)
+# Chain label parsed from PAV name — "(ทั้งเส้น Y ซม.)" → "โซ่Yซม."
 chain_label = ''
 if chain_type:
-    pav_c = bom.env['product.attribute.value'].search([
-        ('attribute_id.name', '=', 'ประเภทโซ่'), ('name', '=', chain_type)
-    ], limit=1)
-    if pav_c and pav_c.bs_value_qty > 0:
-        chain_label = 'โซ่%dซม.' % int(pav_c.bs_value_qty)
-    elif pav_c and pav_c.bs_value_qty < 0:
+    if '(ทั้งเส้น' in chain_type:
+        try:
+            total_cm = float(chain_type.split('(ทั้งเส้น')[1].split('ซม.)')[0].strip())
+            chain_label = 'โซ่%dซม.' % int(total_cm)
+        except Exception:
+            chain_label = ''
+    elif 'โซ่ต่อ' in chain_type:
         chain_label = 'โซ่ต่อ(%dซม.)' % int(h * 2 + 50)
 
 parts = ['W%dxH%d%s' % (w, h, u)]
 if top_color:   parts.append('รางบน%s' % top_color)
 if chain_label: parts.append(chain_label)
+if sii_bai:     parts.append(sii_bai)
 
 product_name = base_product.name + ' ' + ' '.join(parts)
 
 product_attributes = {k: v for k, v in {
-    'สีรางบน': top_color,
+    'สีรางบน':    top_color,
+    # add other variant-driving attributes here
 }.items() if v}
 
 result = []</code></pre>
@@ -1048,7 +1037,7 @@ if my_product_id not in already_ids:
 │   ├── __init__.py
 │   ├── sale_order.py               <span class="comment"># action_bs_config_start, action_confirm override</span>
 │   ├── sale_order_line.py          <span class="comment"># bs_* fields, action_bs_configure, _bs_create_variant_and_mo</span>
-│   ├── <span class="new-file">product_attribute_value.py</span>  <span class="comment"># component_id, bs_value_qty, bs_calc_formula, bs_bom_role</span>
+│   ├── product_attribute_value.py  <span class="comment"># component_id field only</span>
 │   ├── <span class="new-file">product_template.py</span>         <span class="comment"># product_group field</span>
 │   └── <span class="new-file">mrp_production.py</span>           <span class="comment"># sale_id back-reference; product_group on stock.move</span>
 ├── <span class="dir">wizard/</span>
@@ -1057,7 +1046,7 @@ if my_product_id not in already_ids:
 │   └── bs_sale_config_wizard_views.xml
 ├── <span class="dir">views/</span>
 │   ├── sale_order_views.xml
-│   ├── <span class="new-file">product_attribute_value_views.xml</span>  <span class="comment"># component_id/bs_value_qty columns</span>
+│   ├── product_attribute_value_views.xml  <span class="comment"># component_id column on attribute values tree</span>
 │   ├── <span class="new-file">product_template_views.xml</span>
 │   └── <span class="new-file">mrp_production_views.xml</span>           <span class="comment"># sale_id on MO header</span>
 ├── <span class="dir">security/</span>
@@ -1117,7 +1106,7 @@ if my_product_id not in already_ids:
   <div class="callout gotcha"><div class="callout-icon">▲</div><div class="callout-body"><div class="callout-title">UoM category mismatch on MO move</div><p><strong>Fix:</strong> (1) Identify component product UoM. (2) Update BoM line UoM to match. (3) Use <code>line.product_uom_id.id</code> in rule; recalculate qty to that UoM (e.g. piece count via ceiling division).</p></div></div>
 
   <h3>Rule returns nothing for a PAV that has <code>component_id</code> set</h3>
-  <div class="callout gotcha"><div class="callout-icon">▲</div><div class="callout-body"><div class="callout-title">PAV has bs_bom_role set — skipped by Line 10</div><p>Line 10 skips all PAVs with a role. Make sure Line 20 exists and handles that role tag.</p></div></div>
+  <div class="callout gotcha"><div class="callout-icon">▲</div><div class="callout-body"><div class="callout-title">attr_name in SKIP but not in ROLE_ATTRS</div><p><strong>Likely cause:</strong> the attribute name is in the <code>SKIP</code> set of Line 10 but is not in <code>ROLE_ATTRS</code> of Line 20. Add it to the correct set.</p></div></div>
 
   <h3>Combination rule nested function doesn't see outer variables</h3>
   <div class="callout gotcha"><div class="callout-icon">▲</div><div class="callout-body"><div class="callout-title">def helper() inside exec() — no closure</div><p><strong>Fix:</strong> Replace all <code>def</code> helpers with flat inline code. Use <code>_pav</code> as a temporary variable name per lookup. See §5.6 for the correct pattern.</p></div></div>
@@ -1139,16 +1128,31 @@ if my_product_id not in already_ids:
     <li><span class="step-num">9</span>Open MO → verify component products, quantities, UoMs all correct</li>
   </ul>
 
-  <h3>Showcase Test Cases (BoM id=1756, รุ่นโซ่ดึง 38 มิล)</h3>
+  <h3>Default Test Case (BoM id=1756, รุ่นโซ่ดึง 38 มิล)</h3>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>Case</th><th>W</th><th>H</th><th>สีรางบน</th><th>Chain</th><th>Bottom Rail</th><th>Side Rail</th><th>Expected highlights</th></tr></thead>
+      <thead><tr><th>Field</th><th>Value</th></tr></thead>
       <tbody>
-        <tr><td>A</td><td>120</td><td>200</td><td>ขาว</td><td>วน150</td><td>สามเหลี่ยมขาว</td><td>ไม่เอา</td><td>top box 1pc, chain 3.0m, rail 1pc, bracket 1pc</td></tr>
-        <tr><td>B</td><td>620</td><td>240</td><td>ดำ</td><td>ต่อ</td><td>สี่เหลี่ยมดำ</td><td>สีดำ</td><td>top box <strong>2pc</strong> (620÷580), chain 5.3m, side rail 2pc</td></tr>
-        <tr><td>C</td><td>180</td><td>700</td><td>เทา</td><td>วน240</td><td>สามเหลี่ยมเทา</td><td>สีขาว</td><td>side rail <strong>4pc</strong> (700÷597=2/side × 2), ข้อต่อ+สลิง via fixed_qty</td></tr>
-        <tr><td>D</td><td>300</td><td>250</td><td>น้ำตาล</td><td>วน120</td><td>กลม</td><td>ลายไม้</td><td>different sling (E03-0024Q), rail 1pc, side rail 2pc</td></tr>
-        <tr><td>E</td><td>80</td><td>150</td><td>ขาว</td><td><em>none</em></td><td><em>none</em></td><td><em>none</em></td><td>top box only; bracket with no component_id = clean skip</td></tr>
+        <tr><td>Width</td><td>150</td></tr>
+        <tr><td>Height</td><td>220</td></tr>
+        <tr><td>สีใบ</td><td>1208</td></tr>
+        <tr><td>สีรางบน</td><td>ขาว</td></tr>
+        <tr><td>ประเภทโซ่</td><td>โซ่วน 150 ซม. (ทั้งเส้น 300 ซม.)</td></tr>
+        <tr><td>รางล่าง</td><td>สามเหลี่ยม สีขาว</td></tr>
+        <tr><td>ขายื่น</td><td>ติดผนัง</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Hit <strong>Preview</strong> — you should see 5 components:</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Component</th><th>Code</th><th>Qty</th><th>Formula</th></tr></thead>
+      <tbody>
+        <tr><td>ผ้าม่านม้วน</td><td>BR-FB01-250</td><td>2.2 m</td><td>H / 100</td></tr>
+        <tr><td>กล่องบนม่านม้วน</td><td>B02-S-5744-10YW</td><td>1 pc</td><td>ceil(150 / 580)</td></tr>
+        <tr><td>โซ่ม่านม้วน</td><td>C19-R38RL-004</td><td>3.0 m</td><td>300 cm / 100</td></tr>
+        <tr><td>รางล่าง</td><td>B02-S-5776-A</td><td>1 pc</td><td>ceil(150 / 600)</td></tr>
+        <tr><td>ขายึด</td><td>C19-R38RX-11WC</td><td>1 pc</td><td>fixed</td></tr>
       </tbody>
     </table>
   </div>
@@ -1168,6 +1172,9 @@ if my_product_id not in already_ids:
         <tr><td>1.2.1</td><td>Fix "Missing required fields" — 3-tier variant fallback; fix UoM mismatch on กล่องบน</td></tr>
         <tr><td>1.3.0</td><td><code>component_id</code> on PAV; force-refresh BoM on SO confirm; SO→MO <code>sale_id</code> back-reference; <code>product_group</code> on template and MO components tab</td></tr>
         <tr><td>1.4.0</td><td>Remove HDC/OCA configurator dependency; rename button to <code>action_bs_config_start</code>; add <code>bs_value_qty</code>, <code>bs_calc_formula</code>, <code>bs_bom_role</code> on PAV; universal formula dispatcher (Line 10); role dispatcher (Line 20) for bracket/bottom_rail/side_rail; combination rule via PAV ID</td></tr>
+        <tr><td>1.5.0</td><td>Remove <code>bs_value_qty</code>, <code>bs_calc_formula</code>, <code>bs_bom_role</code> from PAV model — logic moved into BoM Python rules; Line 10 dispatches by <code>attr_name</code>; chain length parsed from PAV name string; Line 20 uses <code>ROLE_ATTRS</code> set; Line 30 name builder updated</td></tr>
+        <tr><td>1.5.1</td><td>Remove non-spec columns from attribute values tree view (keep <code>component_id</code> only)</td></tr>
+        <tr><td>1.5.2</td><td>Version bump (no code change)</td></tr>
       </tbody>
     </table>
   </div>
@@ -1177,14 +1184,14 @@ if my_product_id not in already_ids:
 <section class="section" id="s12">
   <div class="section-tag">§ 12</div>
   <h2>AI Prompt Guide — Writing Python Rules with AI</h2>
-  <p class="section-lead">Paste the context block below before every AI request to get accurate rules that follow the v1.4.0 patterns.</p>
+  <p class="section-lead">Paste the context block below before every AI request to get accurate rules that follow the v1.5.0 patterns.</p>
 
   <h3>Context block</h3>
   <div class="prompt-box">
     <div class="prompt-box-label">Paste into Claude / ChatGPT before your request</div>
     <div class="code-block" style="margin:0">
-      <div class="code-header"><span class="code-lang"><span>TEXT</span>AI Context Block v1.4.0</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-      <pre><code class="language-plaintext">You are writing Python rules for BS Dynamic BoM Sale Configurator (Odoo 14 v14.0.1.4.0).
+      <div class="code-header"><span class="code-lang"><span>TEXT</span>AI Context Block v1.5.2</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code class="language-plaintext">You are writing Python rules for BS Dynamic BoM Sale Configurator (Odoo 14 v14.0.1.5.2).
 Rules run inside exec() with a sandboxed locals dict. No imports allowed.
 
 ═══ INJECTED VARIABLES ═══
@@ -1204,14 +1211,15 @@ result = []  valid (conditional exclusion)
 product_name        str          — SO line display name (use on last line)
 product_attributes  dict[str,str] — drives variant lookup; values must pre-exist on template
 
-═══ KEY PATTERNS (v1.4.0) ═══
-1. Line 10 — Universal Formula Dispatcher
-   Iterates values dict, looks up PAV, reads bs_calc_formula + bs_value_qty,
-   appends component. Skips PAVs with bs_bom_role.
+═══ KEY PATTERNS (v1.5.0) ═══
+1. Line 10 — Formula Dispatcher (attr_name-based)
+   Iterates values dict, skips SKIP set (includes role attrs), looks up PAV,
+   dispatches qty by attr_name (hardcoded). Only pav.component_id is read from PAV.
+   Chain length is parsed from PAV name string "(ทั้งเส้น Y ซม.)".
 
-2. Line 20 — Role-Based Dispatcher
-   Handles bs_bom_role: 'bracket' (fixed), 'bottom_rail' (pieces_width),
-   'side_rail' (2 × ceil(height / stock)). Uses prev_result already_ids to dedup.
+2. Line 20 — Role-Based Dispatcher (ROLE_ATTRS set)
+   Handles {'รางล่าง', 'รางข้าง', 'ขายื่น'} by attr_name (no PAV field check).
+   รางล่าง stock varies by product code. รางข้าง: 2 × ceil(H/597). Uses already_ids to dedup.
 
 3. Line 25 — Combination Rule
    Matches two PAV IDs. Use flat inline code — NO def helpers inside exec().
@@ -1219,6 +1227,7 @@ product_attributes  dict[str,str] — drives variant lookup; values must pre-exi
 
 4. Line 30 — Product Name Builder
    result = []. Sets product_name and product_attributes only.
+   Chain label parsed from PAV name string — no numeric PAV fields.
 
 ═══ UOM CRITICAL ═══
 uom_id must match component product's UoM category.
@@ -1234,7 +1243,7 @@ NOT: import open eval exec os sys</code></pre>
   <h3>System Prompt for Claude Projects / GPT Custom Instructions</h3>
   <div class="code-block">
     <div class="code-header"><span class="code-lang"><span>TEXT</span>System Prompt</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-    <pre><code class="language-plaintext">You are an expert at writing Python rules for BS Dynamic BoM Sale Configurator (Odoo 14 v14.0.1.4.0).
+    <pre><code class="language-plaintext">You are an expert at writing Python rules for BS Dynamic BoM Sale Configurator (Odoo 14 v14.0.1.5.2).
 
 Rules run in exec() with sandboxed locals. No imports. Key variables:
   values       — wizard inputs (width, height, uom, + attr_name: value_name)
@@ -1242,11 +1251,14 @@ Rules run in exec() with sandboxed locals. No imports. Key variables:
   prev_result  — previous line output ([] for line 1)
   result       — assign this: [{'product_id':int,'name':str,'qty':float}]
 
-v1.4.0 patterns:
-  Line 10: Universal formula dispatcher — iterate values, search PAV, read bs_calc_formula
-  Line 20: Role dispatcher — bs_bom_role: bracket/bottom_rail/side_rail
+v1.5.0 patterns:
+  Line 10: Formula dispatcher — iterate values, skip SKIP set (role attrs excluded),
+           dispatch qty by attr_name. Only pav.component_id read from PAV.
+  Line 20: Role dispatcher — ROLE_ATTRS={'รางล่าง','รางข้าง','ขายื่น'} by attr_name.
+           No PAV role field. Stock varies by product code. Uses already_ids to dedup.
   Line 25: Combination rule — match two PAV IDs; NO def helpers, use flat inline code
-  Line 30: Name builder — result=[], sets product_name + product_attributes
+  Line 30: Name builder — result=[], sets product_name + product_attributes.
+           Chain label parsed from name string "(ทั้งเส้น Y ซม.)".
 
 Rules:
 1. Always values.get('key', default)
@@ -1258,7 +1270,7 @@ Rules:
 
 <footer class="site-footer">
   <div class="footer-brand">Dynamic BoM Sale Configurator</div>
-  <div class="footer-meta">bs_dynamic_bom_sale · v14.0.1.4.0 · Basic Solution Co., Ltd.</div>
+  <div class="footer-meta">bs_dynamic_bom_sale · v14.0.1.5.2 · Basic Solution Co., Ltd.</div>
 </footer>
 </main>
 
@@ -1341,26 +1353,26 @@ function getDemoValues() {
   return { cat, vals };
 }
 
-// PAV simulation database (mirrors §04 examples)
+// PAV simulation database — only component_id matters (v1.5.0: no formula/qty/role fields)
 const PAV_DB = {
   'กลับหน้าผ้า': {
-    'ไม่เอา': { component: 'ผ้าม่านม้วน (ไม่กลับ)', formula: null, qty: 1, role: null },
-    'กลับ':    { component: 'ผ้าม่านม้วน (กลับ)',   formula: null, qty: 1, role: null },
+    'ไม่เอา': { component: 'ผ้าม่านม้วน (ไม่กลับ)' },
+    'กลับ':    { component: 'ผ้าม่านม้วน (กลับ)' },
   },
   'สีรางบน': {
-    'ขาว':    { component: 'กล่องบน 38มม. สีขาว', formula: 'pieces_width', qty: 580, role: null },
-    'ดำ':     { component: 'กล่องบน 38มม. สีดำ',  formula: 'pieces_width', qty: 580, role: null },
-    'น้ำตาล': { component: 'กล่องบน 38มม. สีน้ำตาล', formula: 'pieces_width', qty: 580, role: null },
-    'เทา':    { component: 'กล่องบน 38มม. สีเทา', formula: 'pieces_width', qty: 580, role: null },
+    'ขาว':    { component: 'กล่องบน 38มม. สีขาว' },
+    'ดำ':     { component: 'กล่องบน 38มม. สีดำ' },
+    'น้ำตาล': { component: 'กล่องบน 38มม. สีน้ำตาล' },
+    'เทา':    { component: 'กล่องบน 38มม. สีเทา' },
   },
   'ดึงและปรับ': {
-    'ขวา':  { component: 'โซ่ดึง (ขวา)',  formula: 'length_height', qty: 0, role: null },
-    'ซ้าย': { component: 'โซ่ดึง (ซ้าย)', formula: 'length_height', qty: 0, role: null },
+    'ขวา':  { component: 'โซ่ดึง (ขวา)' },
+    'ซ้าย': { component: 'โซ่ดึง (ซ้าย)' },
   },
   'รางล่าง': {
-    'สามเหลี่ยมขาว': { component: 'รางล่าง สามเหลี่ยม สีขาว', formula: 'pieces_width', qty: 600, role: 'bottom_rail' },
-    'สี่เหลี่ยมดำ':  { component: 'รางล่าง สี่เหลี่ยม สีดำ',  formula: 'pieces_width', qty: 600, role: 'bottom_rail' },
-    'กลม':           { component: 'รางล่าง กลม',               formula: 'pieces_width', qty: 600, role: 'bottom_rail' },
+    'สามเหลี่ยมขาว': { component: 'รางล่าง สามเหลี่ยม สีขาว' },
+    'สี่เหลี่ยมดำ':  { component: 'รางล่าง สี่เหลี่ยม สีดำ' },
+    'กลม':           { component: 'รางล่าง กลม' },
   },
   'สีใบ': {
     'R557-1': { component: null }, 'C26229': { component: null },
@@ -1368,68 +1380,57 @@ const PAV_DB = {
   },
 };
 
-function ceilQty(length, stock) {
+function ceilDiv(length, stock) {
   if (stock <= 0) stock = 1;
   const n = Math.floor(length / stock);
   return Math.max(n + (length % stock > 0 ? 1 : 0), 1);
 }
 
 function computeRollerBlind(vals) {
-  const w      = vals.width;
-  const h      = vals.height;
-  const fabric = vals['สีใบ'] || '';
-  const glap   = vals['กลับหน้าผ้า'] || 'ไม่เอา';
+  const w = vals.width;
+  const h = vals.height;
 
-  const MEAS   = new Set(['width','height','uom','produce_qty']);
-  const result = [];
+  // v1.5.0: SKIP set — role attrs listed explicitly, handled by Line 20
+  const SKIP       = new Set(['width','height','uom','produce_qty','cloth_method','piece_no','set_name','รางล่าง','รางข้าง','ขายื่น']);
+  const ROLE_ATTRS = new Set(['รางล่าง','รางข้าง','ขายื่น']);
+  const result     = [];
 
-  // Line 10 — Universal dispatcher (non-role PAVs)
+  // Line 10 — Formula Dispatcher (qty logic per attr_name, only component from PAV)
   for (const [attr, valName] of Object.entries(vals)) {
-    if (MEAS.has(attr) || !valName) continue;
+    if (SKIP.has(attr) || !valName || typeof valName !== 'string') continue;
     const attrDb = PAV_DB[attr];
     if (!attrDb) continue;
     const pav = attrDb[valName];
     if (!pav || !pav.component) continue;
-    if (pav.role) continue; // skip roles — handled by Line 20
 
-    let qty = 1.0;
-    if (pav.formula === 'pieces_width') {
-      qty = ceilQty(w, pav.qty);
-    } else if (pav.formula === 'length_height') {
+    let qty = 1.0, uom = 'ชิ้น';
+    if (attr === 'สีรางบน') {
+      // top box rail: ceil(width / 580cm stock)
+      qty = ceilDiv(w, 580);
+    } else if (attr === 'ดึงและปรับ') {
+      // extension chain: (2H + 50) / 100 m
       qty = Math.round((h * 2 + 50) / 100 * 100) / 100;
-    } else if (pav.formula === 'fixed_qty') {
-      qty = pav.qty || 1;
-    } else if (pav.formula === 'length_fixed') {
-      qty = Math.round(pav.qty / 100 * 1000) / 1000;
+      uom = 'เมตร';
+    } else {
+      qty = 1.0;
     }
 
-    // Fabric area special case
-    if (attr === 'กลับหน้าผ้า') {
-      const fabricM2 = Math.round(w * h / 10000 * 10000) / 10000;
-      qty = fabricM2;
-      if (glap === 'กลับ') {
-        result.push({ name: `${pav.component} ${fabric}`.trim(), qty: fabricM2, uom: 'm²', line: '10' });
-        result.push({ name: `ผ้าหลังม่าน ${fabric}`.trim(), qty: fabricM2, uom: 'm²', line: '10' });
-        continue;
-      }
-    }
-
-    if (qty > 0) result.push({ name: pav.component, qty, uom: attr === 'ดึงและปรับ' ? 'เมตร' : (pav.formula === 'pieces_width' ? 'ชิ้น' : 'ชิ้น'), line: '10' });
+    if (qty > 0) result.push({ name: pav.component, qty, uom, line: '10' });
   }
 
-  // Line 20 — Role dispatcher
+  // Line 20 — Role-Based Dispatcher (identified by attr_name, not PAV field)
   const alreadyNames = new Set(result.map(r => r.name));
   for (const [attr, valName] of Object.entries(vals)) {
-    if (MEAS.has(attr) || !valName) continue;
+    if (!ROLE_ATTRS.has(attr) || !valName || typeof valName !== 'string') continue;
     const attrDb = PAV_DB[attr];
     if (!attrDb) continue;
     const pav = attrDb[valName];
-    if (!pav || !pav.role || !pav.component) continue;
+    if (!pav || !pav.component) continue;
 
     let qty = 1;
-    if (pav.role === 'bottom_rail') qty = ceilQty(w, pav.qty);
-    else if (pav.role === 'side_rail') qty = 2 * ceilQty(h, pav.qty);
-    else if (pav.role === 'bracket') qty = pav.qty || 1;
+    if (attr === 'รางล่าง')   qty = ceilDiv(w, 600);  // stock=600 for demo (5776 series)
+    else if (attr === 'รางข้าง') qty = 2 * ceilDiv(h, 597);
+    else if (attr === 'ขายื่น') qty = 1;
 
     if (!alreadyNames.has(pav.component)) {
       result.push({ name: pav.component, qty, uom: 'ชิ้น', line: '20' });
@@ -1437,18 +1438,15 @@ function computeRollerBlind(vals) {
     }
   }
 
-  // Line 30 — Product name
+  // Line 30 — Product Name Builder
   const topColor = vals['สีรางบน'] || '';
-  const productName = `${base_product_name(w, h, 'cm', fabric, topColor)}`;
+  const siiPaa   = vals['สีใบ'] || '';
+  const parts    = [`W${Math.round(w)}xH${Math.round(h)}cm`];
+  if (topColor) parts.push('รางบน' + topColor);
+  if (siiPaa)   parts.push(siiPaa);
+  const productName = 'ม่านม้วน 38มม. ' + parts.join(' ');
 
   return { productName, result };
-}
-
-function base_product_name(w, h, u, fabric, top) {
-  const parts = [`W${Math.round(w)}xH${Math.round(h)}${u}`];
-  if (fabric) parts.push(fabric);
-  if (top)    parts.push('รางบน' + top);
-  return 'ม่านม้วน 38มม. ' + parts.join(' ');
 }
 
 function computeAwning(vals) {
