@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BS Dynamic BoM — Sale Configurator v1.5.2</title>
+<title>BS Dynamic BoM — Sale Configurator v1.7.3</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Playfair+Display:ital,wght@0,700;0,800;1,700;1,800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/base16/material-darker.min.css">
@@ -257,7 +257,7 @@ tbody td:first-child{font-family:'JetBrains Mono',monospace;font-size:.77rem;col
     <div class="side-title">Dynamic BoM<br>Sale Configurator</div>
     <div class="side-sub">Developer &amp; User Tutorial</div>
     <div class="side-badges">
-      <span class="badge badge-coral">v14.0.1.5.2</span>
+      <span class="badge badge-coral">v14.0.1.7.3</span>
       <span class="badge badge-warm">Developer</span>
     </div>
   </div>
@@ -275,7 +275,8 @@ tbody td:first-child{font-family:'JetBrains Mono',monospace;font-size:.77rem;col
     <a href="#s09"><span class="num">09</span>Common Errors &amp; Fixes</a>
     <a href="#s10"><span class="num">10</span>Testing Checklist</a>
     <a href="#s11"><span class="num">11</span>Version History</a>
-    <a href="#s12"><span class="num">12</span>AI Prompt Guide</a>
+    <a href="#s12"><span class="num">12</span>Companion Module</a>
+    <a href="#s13"><span class="num">13</span>AI Prompt Guide</a>
   </nav>
   <div class="side-footer">bs_dynamic_bom_sale<br>Basic Solution Co., Ltd.</div>
 </aside>
@@ -290,9 +291,9 @@ tbody td:first-child{font-family:'JetBrains Mono',monospace;font-size:.77rem;col
   <p class="hero-desc">Python rules on BoM lines compute components from wizard inputs. Variant and Manufacturing Order are created only at SO confirmation — zero pre-created combinatorial variants.</p>
   <div class="hero-meta">
     <div class="hero-meta-item"><div class="hero-meta-label">Module</div><div class="hero-meta-val">bs_dynamic_bom_sale</div></div>
-    <div class="hero-meta-item"><div class="hero-meta-label">Version</div><div class="hero-meta-val">14.0.1.5.2</div></div>
+    <div class="hero-meta-item"><div class="hero-meta-label">Version</div><div class="hero-meta-val">14.0.1.7.3</div></div>
     <div class="hero-meta-item"><div class="hero-meta-label">Platform</div><div class="hero-meta-val">Odoo 14</div></div>
-    <div class="hero-meta-item"><div class="hero-meta-label">Depends</div><div class="hero-meta-val">bs_dynamic_bom_rule · mrp</div></div>
+    <div class="hero-meta-item"><div class="hero-meta-label">Depends</div><div class="hero-meta-val">bs_dynamic_bom_rule · sale_management · mrp</div></div>
   </div>
 </div>
 
@@ -333,6 +334,13 @@ tbody td:first-child{font-family:'JetBrains Mono',monospace;font-size:.77rem;col
       <p>The button calls <code>action_bs_config_start</code> — a unique method name. The OCA module <code>product_configurator_sale</code> overrides <code>action_config_start</code> without calling <code>super()</code>. If still installed in the DB, it would silently swallow the standard override. The unique name bypasses this entirely.</p>
     </div>
   </div>
+  <div class="callout tip">
+    <div class="callout-icon">✓</div>
+    <div class="callout-body">
+      <div class="callout-title">Companion Module — bs_attr_conditional_rule</div>
+      <p>Adds conditional attribute rules to the wizard: auto-fill, value filtering, and blacklisting based on trigger attribute values. See <strong>§12</strong> for full documentation.</p>
+    </div>
+  </div>
 
   <div class="img-grid">
     <div class="img-block">
@@ -351,7 +359,7 @@ tbody td:first-child{font-family:'JetBrains Mono',monospace;font-size:.77rem;col
   <div class="section-tag">§ Demo</div>
   <h2>Interactive Preview Simulator</h2>
   <p class="section-lead">Change dimensions and options to see component quantities recalculate live. Click <strong>Apply to SO</strong> to see the Configured state.</p>
-  <p class="demo-note">Quantities use JavaScript translations of the actual Python rules from §05. The v1.5.0 attr_name-based dispatch approach (Line 10 SKIP set + Line 20 ROLE_ATTRS set) is shown in the ม่านม้วน category.</p>
+  <p class="demo-note">Quantities use JavaScript translations of the Master Rule from §5.11. Width and height are entered in <strong>metres</strong> (v1.6.2+). Stock-length ceiling formulas convert to cm internally.</p>
 
   <div id="d-apply-zone" class="demo-grid">
     <div class="demo-panel">
@@ -365,8 +373,8 @@ tbody td:first-child{font-family:'JetBrains Mono',monospace;font-size:.77rem;col
           </select>
         </div>
         <div class="d-row">
-          <div class="d-field"><label class="d-label">Width (cm)</label><input id="d-w" class="d-input" type="number" value="160" min="10" max="600"></div>
-          <div class="d-field"><label class="d-label">Height (cm)</label><input id="d-h" class="d-input" type="number" value="210" min="10" max="400"></div>
+          <div class="d-field"><label class="d-label">Width (m)</label><input id="d-w" class="d-input" type="number" value="1.60" min="0.1" max="6.0" step="0.01"></div>
+          <div class="d-field"><label class="d-label">Height (m)</label><input id="d-h" class="d-input" type="number" value="2.10" min="0.1" max="4.0" step="0.01"></div>
         </div>
         <hr class="d-divider">
 
@@ -981,6 +989,185 @@ if my_product_id not in already_ids:
       <p style="margin-top:6px"><strong>Not available:</strong> <code>import</code>, <code>open</code>, <code>eval</code>, <code>exec</code>, <code>os</code>, <code>sys</code>. ORM via <code>bom.env['model']</code>.</p>
     </div>
   </div>
+
+  <h3>5.11 Pattern — Master Rule (All Cases Combined)</h3>
+  <p>A single BoM line handling every component requirement. Recommended for new BoMs — one rule, zero maintenance on individual lines. <strong>Width and height are always in metres.</strong></p>
+  <div class="callout note">
+    <div class="callout-icon">⚡</div>
+    <div class="callout-body">
+      <div class="callout-title">Four Cases</div>
+      <p><strong>Case 1</strong> — Direct lookup: <code>values[attr]</code> → PAV → <code>component_id</code>.<br>
+      <strong>Case 2</strong> — Qty by attribute name (dimensional logic per attr).<br>
+      <strong>Case 3</strong> — Custom value: <code>is_custom = True</code> PAV fallback — user typed a free text value.<br>
+      <strong>Case 4</strong> — <code>bom.rate</code> table lookup (after the attr loop, unconditional).</p>
+    </div>
+  </div>
+
+  <h4>Skeleton</h4>
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang"><span>PYTHON</span>Master Rule — Skeleton</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre><code class="language-python">result  = []
+PAV     = bom.env['product.attribute.value']
+BomRate = bom.env['bom.rate']
+
+w_m  = float(values.get('width',  0.0))   # metres
+h_m  = float(values.get('height', 0.0))   # metres
+w_cm = w_m * 100.0                        # cm — for stock-length formulas
+h_cm = h_m * 100.0
+
+SKIP = {
+    'width', 'height', 'uom', 'produce_qty',
+    'cloth_method', 'piece_no', 'set_name',
+}
+
+for attr_name, val_name in values.items():
+    if attr_name in SKIP:
+        continue
+    if not val_name or not isinstance(val_name, str) or not val_name.strip():
+        continue
+
+    # Case 1 — direct PAV lookup
+    pav = PAV.search([
+        ('attribute_id.name', '=', attr_name),
+        ('name',              '=', val_name),
+    ], limit=1)
+
+    # Case 3 — custom-value fallback (is_custom PAV when text doesn't match any name)
+    if not pav:
+        pav = PAV.search([
+            ('attribute_id.name', '=', attr_name),
+            ('is_custom',         '=', True),
+        ], limit=1)
+
+    if not pav or not pav.component_id:
+        continue
+
+    prod = pav.component_id
+
+    # Case 2 — dimensional qty per attribute name
+    if attr_name in ('สีรางบน', 'รางล่าง'):
+        stock_cm = 580.0
+        n   = int(w_cm / stock_cm)
+        qty = float(n + (1 if w_cm % stock_cm else 0))
+        qty = max(qty, 1.0)
+
+    elif attr_name == 'รางข้าง':
+        stock_cm        = 597.0
+        n               = int(h_cm / stock_cm)
+        pieces_per_side = n + (1 if h_cm % stock_cm else 0)
+        qty             = float(max(pieces_per_side, 1) * 2)
+
+    elif attr_name == 'ขายื่น':
+        qty = 1.0
+
+    elif attr_name == 'ประเภทโซ่':
+        if pav.is_custom:
+            try:
+                qty = float(val_name)
+            except Exception:
+                qty = round((2.0 * h_cm + 50.0) / 100.0, 3)
+        elif '(ทั้งเส้น' in val_name and 'ซม.)' in val_name:
+            try:
+                total_cm = float(val_name.split('(ทั้งเส้น')[1].split('ซม.)')[0])
+                qty = round(total_cm / 100.0, 3)
+            except Exception:
+                qty = round((2.0 * h_cm + 50.0) / 100.0, 3)
+        elif 'ต่อ' in val_name:
+            qty = round((2.0 * h_cm + 50.0) / 100.0, 3)
+        else:
+            qty = 1.0
+
+    elif pav.is_custom:
+        # Case 3 — generic custom: parse typed text as numeric qty
+        try:
+            qty = float(val_name)
+        except Exception:
+            qty = 1.0
+
+    else:
+        qty = 1.0
+
+    result.append({
+        'product_id': prod.id,
+        'name':       prod.display_name,
+        'qty':        qty,
+    })
+
+# Case 4 — bom.rate table lookup (unconditional, always runs)
+rate = BomRate.search([
+    ('rate_group_id', '=', 1),        # เรทจับกลางตาราง 1
+    ('compute_from',  '=', 'width'),
+    ('min',           '<=', w_m),
+    ('max',           '>=', w_m),
+], limit=1)
+if rate:
+    result.append({
+        'default_code': 'C19-R38RX-002W',   # จับกลาง — self-documenting for Test Rule check
+        'name':         rate.name,
+        'qty':          rate.qty,
+    })</code></pre>
+  </div>
+
+  <h4>is_custom PAVs for รุ่นโซ่ดึง 38 มิล</h4>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Attribute</th><th>PAV name</th><th>Component code</th><th>Custom value means</th></tr></thead>
+      <tbody>
+        <tr><td>ประเภทโซ่</td><td>โซ่ต่อ ระบุความยาว</td><td>C19-R38RL-004</td><td>Chain length in metres</td></tr>
+        <tr><td>สลิง</td><td>ติด แบบเจาะรู ระบุเพิ่มความยาวรางล่าง</td><td>E03-0024P</td><td>Extra sling length (m)</td></tr>
+        <tr><td>สลิง</td><td>ติด แบบไม่เจาะรู ระบุเพิ่มความยาวรางล่าง</td><td>E03-0024Q</td><td>Extra sling length (m)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>Testing via Odoo Shell</h4>
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang"><span>PYTHON</span>Shell Test</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre><code class="language-python">from odoo.addons.bs_dynamic_bom_rule.utils.rule_evaluator import RuleEvaluator
+
+bom       = env['mrp.bom'].browse(1756)
+line      = bom.bom_line_ids.filtered(lambda l: l.sequence == 10)
+evaluator = RuleEvaluator(env)
+base      = bom.product_tmpl_id
+
+test_values = {
+    'width': 1.1, 'height': 2.0, 'uom': 'm',
+    'ประเภทโซ่': 'โซ่วน 150 ซม. (ทั้งเส้น 300 ซม.)',
+    'ขายื่น':    'ติดผนัง',
+    'รางล่าง':   'กลม สีขาว',
+    'รางข้าง':   'สีขาว',
+    'สีรางบน':   'ขาว',
+}
+
+result, pname, pattrs, log = evaluator.evaluate(
+    rule=line.python_rule,
+    product=base, base_product=base,
+    bom=bom, line=line,
+    prev_result=[], values=test_values,
+)
+for r in result:
+    print(f"qty={r['qty']}  {r['name']}")</code></pre>
+  </div>
+  <p>Expected output (W=1.1 m, H=2.0 m):</p>
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang"><span>TEXT</span>Expected</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre><code class="language-plaintext">qty=3.0    โซ่ม่านม้วน RL 38mm
+qty=1.0    ขายึดหัวท้าย (ขาว)
+qty=1.0    รางกลม 38mm ขาวYL
+qty=2.0    รางข้าง สีขาว
+qty=1.0    กล่องบน 38mm ขาว
+qty=3.0    เรทจับกลาง 3 ตัว</code></pre>
+  </div>
+
+  <h4>Test Rule Button in BoM UI</h4>
+  <p>Every BoM line with Python Rule enabled shows a <strong>▶ Test Rule (sample values)</strong> button. Click it to run the rule in-place; results appear in the <strong>Last Compute Log</strong> field. Sample values injected: <code>width=1.5</code>, <code>height=2.0</code>, <code>uom='m'</code>. Attribute values are not included — only rules using <code>width</code>/<code>height</code> directly (e.g. bom.rate) will produce output.</p>
+  <div class="callout tip">
+    <div class="callout-icon">✓</div>
+    <div class="callout-body">
+      <div class="callout-title">Use default_code in bom.rate results</div>
+      <p>Instead of a bare <code>product_id</code> integer, use <code>'default_code': 'C19-R38RX-002W'</code> in rate result items. The Test Rule product-check log will show <code>FOUND</code> / <code>NOT FOUND</code> with the code — self-documenting and easy to diagnose.</p>
+    </div>
+  </div>
 </section>
 
 <!-- ═══ §06 WIZARD PARAMETERS ═══ -->
@@ -1013,16 +1200,23 @@ if my_product_id not in already_ids:
 
   <h3>6.2 Attribute Values Section (Dynamic)</h3>
   <p>All attributes from the product template are shown dynamically. The user selects one value per attribute. The selected value name is packed into <code>values[attribute_name] = value_name</code>.</p>
-  <p>Standard dimensions always present:</p>
+  <p>Standard dimensions always present in <code>values</code>:</p>
   <div class="table-wrap">
     <table>
       <thead><tr><th>Key</th><th>Type</th><th>Description</th></tr></thead>
       <tbody>
-        <tr><td>width</td><td>float</td><td>Width in cm</td></tr>
-        <tr><td>height</td><td>float</td><td>Height in cm</td></tr>
-        <tr><td>uom</td><td>str</td><td>Unit label, e.g. <code>'cm'</code></td></tr>
+        <tr><td>width</td><td>float</td><td>Width in <strong>metres</strong> (wizard default unit = <code>m</code>)</td></tr>
+        <tr><td>height</td><td>float</td><td>Height in <strong>metres</strong></td></tr>
+        <tr><td>uom</td><td>str</td><td>Unit label, always <code>'m'</code></td></tr>
       </tbody>
     </table>
+  </div>
+  <div class="callout gotcha">
+    <div class="callout-icon">▲</div>
+    <div class="callout-body">
+      <div class="callout-title">Width and Height are in metres</div>
+      <p>Since v1.6.2 the wizard default unit is <code>m</code>. Convert to cm inside rules when needed: <code>w_cm = w_m * 100.0</code>. Stock lengths in ceiling formulas are in cm.</p>
+    </div>
   </div>
 </section>
 
@@ -1066,6 +1260,7 @@ if my_product_id not in already_ids:
         <tr><td>bs_config_log</td><td>Text</td><td>Human-readable component breakdown</td></tr>
         <tr><td>bs_config_name</td><td>Char</td><td>Display name from <code>product_name</code> rule</td></tr>
         <tr><td>bs_config_state</td><td>Selection</td><td><code>draft</code> → <code>configured</code> → <code>confirmed</code></td></tr>
+        <tr><td>bs_mo_ids</td><td>Many2many mrp.production</td><td>All MOs created for this line (one per unit via <code>produce_qty</code> loop)</td></tr>
       </tbody>
     </table>
   </div>
@@ -1175,28 +1370,164 @@ if my_product_id not in already_ids:
         <tr><td>1.5.0</td><td>Remove <code>bs_value_qty</code>, <code>bs_calc_formula</code>, <code>bs_bom_role</code> from PAV model — logic moved into BoM Python rules; Line 10 dispatches by <code>attr_name</code>; chain length parsed from PAV name string; Line 20 uses <code>ROLE_ATTRS</code> set; Line 30 name builder updated</td></tr>
         <tr><td>1.5.1</td><td>Remove non-spec columns from attribute values tree view (keep <code>component_id</code> only)</td></tr>
         <tr><td>1.5.2</td><td>Version bump (no code change)</td></tr>
+        <tr><td>1.6.0</td><td><code>is_custom</code> + <code>custom_value</code> on wizard attr line; wizard tree shows Attribute (readonly) + Value + Custom Value only; <code>measure_uom</code> default → <code>m</code>, readonly; <code>width</code>/<code>height</code> digits → 3; <code>produce_qty</code> → <code>Integer</code></td></tr>
+        <tr><td>1.6.1</td><td><code>attribute_line_id</code> kept as <code>invisible="1"</code> in tree to satisfy <code>required=True</code>; <code>column_invisible</code> replaced with <code>invisible</code> (Odoo 14 compatible)</td></tr>
+        <tr><td>1.6.2</td><td><code>produce_qty</code> changed from <code>Float(digits=(16,0))</code> to <code>Integer</code>; Master Rule (§5.11) added — single BoM line covers all 4 cases; <strong>width/height now in metres throughout</strong></td></tr>
+        <tr><td>1.7.0</td><td>Validation: Apply now raises if any attribute has no value selected; <code>bs_mo_id</code> → <code>bs_mo_ids</code> Many2many — one MO per unit (<code>produce_qty</code> loop, each <code>product_qty=1</code>); gear icon inline in SO line tree; restore <code>custom_value</code> on reconfigure; remove <code>config_ok</code> auto-set from Apply</td></tr>
+        <tr><td>1.7.1–1.7.3</td><td>Value domain restriction in wizard attr lines (values scoped to product Variants tab); <code>ptal_value_ids</code> related field on <code>bs.sale.config.attr.line</code>; ternary domain expression in XML for <code>value_id</code> dropdown</td></tr>
       </tbody>
     </table>
   </div>
 </section>
 
-<!-- ═══ §12 AI PROMPT GUIDE ═══ -->
+<!-- ═══ §12 COMPANION MODULE ═══ -->
 <section class="section" id="s12">
   <div class="section-tag">§ 12</div>
+  <h2>Companion Module — <code>bs_attr_conditional_rule</code></h2>
+  <p class="section-lead">Adds conditional attribute rules to the wizard: auto-fill, value filtering (whitelist), and value blacklisting — all triggered by a specific attribute value selection. Effects reset when the trigger is cleared.</p>
+
+  <h3>12.1 How It Works</h3>
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang"><span>TEXT</span>Flow</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre><code class="language-plaintext">Product Template → "Attribute Rules" tab
+  └── Rule: Trigger [Attribute X = Value Y]
+        ├── Set These Values:  [Attr A = Val1, Attr B = Val2, ...]
+        ├── Cannot Select:     [Val3, Val4, ...]   ← blacklist
+        └── Value Filters (form popup):
+              ├── Target Attr C → Allowed: [Val5, Val6]   ← whitelist
+              └── Target Attr D → Allowed: [Val7]
+
+In Wizard:
+  User selects Attribute X = Value Y
+    → Auto-fill:  Attr A → Val1, Attr B → Val2  (only if currently empty)
+    → Exclude:    Val3, Val4 removed from their attribute's dropdown
+    → Filter:     Attr C dropdown shows only Val5, Val6
+                  Attr D dropdown shows only Val7
+                  (current value cleared if it falls outside the allowed set)
+
+  User clears Attribute X (deselects Value Y)
+    → All filters/exclusions reset; full value lists restored</code></pre>
+  </div>
+
+  <h3>12.2 Setting Up Rules</h3>
+  <ol>
+    <li>Open a product template → <strong>Attribute Rules</strong> tab</li>
+    <li>Click <strong>Add a line</strong>:
+      <ul>
+        <li><strong>Trigger Attribute</strong> — PTAL on this product that acts as the trigger</li>
+        <li><strong>Trigger Value</strong> — PAV that fires the rule</li>
+        <li><strong>Set These Values</strong> — PAVs to auto-fill in the wizard (fills empty slots only)</li>
+        <li><strong>Cannot Select</strong> — PAVs that become unavailable while this rule is active</li>
+      </ul>
+    </li>
+    <li>To add whitelist filters, open the rule row → <strong>Value Filters</strong> sub-table:
+      <ul>
+        <li><strong>Target Attribute</strong> — PTAL whose dropdown will be restricted</li>
+        <li><strong>Allowed Values</strong> — only these PAVs appear in the wizard dropdown</li>
+      </ul>
+    </li>
+  </ol>
+  <div class="callout info">
+    <div class="callout-icon">ℹ</div>
+    <div class="callout-body">
+      <div class="callout-title">Multiple rules with the same trigger</div>
+      <p>All contribute: auto-fill uses first-rule-wins per attribute; whitelist filters union across rules; exclusions accumulate. If both a whitelist and exclusion target the same attribute, the excluded value is removed from the whitelist. All dropdowns are scoped to the product's Variants tab only.</p>
+    </div>
+  </div>
+
+  <h3>12.3 Models</h3>
+  <h4>bs.product.attr.rule</h4>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>product_tmpl_id</td><td>Many2one product.template</td><td>Owning product</td></tr>
+        <tr><td>sequence</td><td>Integer</td><td>Evaluation order (lower = first)</td></tr>
+        <tr><td>trigger_ptal_id</td><td>Many2one product.template.attribute.line</td><td>Trigger attribute line</td></tr>
+        <tr><td>trigger_value_id</td><td>Many2one product.attribute.value</td><td>Value that fires the rule</td></tr>
+        <tr><td>apply_value_ids</td><td>Many2many product.attribute.value</td><td>PAVs to auto-fill when triggered</td></tr>
+        <tr><td>exclude_value_ids</td><td>Many2many product.attribute.value</td><td>PAVs that cannot be selected while rule is active</td></tr>
+        <tr><td>filter_line_ids</td><td>One2many bs.product.attr.rule.filter</td><td>Whitelist value filters per attribute</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <h4>bs.product.attr.rule.filter</h4>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>rule_id</td><td>Many2one bs.product.attr.rule</td><td>Parent rule</td></tr>
+        <tr><td>target_ptal_id</td><td>Many2one product.template.attribute.line</td><td>Attribute to whitelist</td></tr>
+        <tr><td>allowed_value_ids</td><td>Many2many product.attribute.value</td><td>Only these values appear in the wizard</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>12.4 Wizard Behaviour</h3>
+  <p><code>_onchange_apply_attr_rules</code> fires on every <code>attr_line_ids</code> change:</p>
+  <ol>
+    <li>Snapshot current line data; collect selected PAV ids</li>
+    <li>Determine <strong>active rules</strong> (trigger value currently selected)</li>
+    <li>Build <strong>auto-fill map</strong> (<code>attribute → PAV</code>): first active rule wins per attribute</li>
+    <li>Build <strong>value filters</strong> map: whitelist from <code>filter_line_ids</code> (union); exclusions from <code>exclude_value_ids</code> (accumulated)</li>
+    <li>Apply auto-fill (empty slots only) and clear values outside the allowed set</li>
+    <li>When trigger is deselected: all lines rebuilt with <code>is_filtered=False</code>, restoring full dropdowns</li>
+  </ol>
+  <p>Wizard <code>value_id</code> dropdown domain:</p>
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang"><span>XML</span>value_id domain</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre><code class="language-xml">[('id', 'in', allowed_value_ids)] if is_filtered else [('id', 'in', ptal_value_ids)]</code></pre>
+  </div>
+
+  <h3>12.5 Installation</h3>
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang"><span>BASH</span>Install</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre><code class="language-bash">venv/bin/python odoo-bin -d dv_kc --config=/home/server/odoo/odoo.conf \
+    -u bs_dynamic_bom_sale -i bs_attr_conditional_rule --stop-after-init</code></pre>
+  </div>
+  <div class="callout gotcha">
+    <div class="callout-icon">▲</div>
+    <div class="callout-body">
+      <div class="callout-title">Use -u + -i together</div>
+      <p>Use <code>-u bs_dynamic_bom_sale -i bs_attr_conditional_rule</code> together. Using <code>-i</code> alone forces all installed modules into <code>_init_modules</code>, triggering combined-arch validation on <code>hdc_product_configurator</code>'s broken views. The parent upgrade is required to avoid the cycle.</p>
+    </div>
+  </div>
+
+  <h3>12.6 Module File Structure</h3>
+  <div class="file-tree">
+<span class="dir">bs_attr_conditional_rule/</span>
+├── __manifest__.py
+├── __init__.py
+├── <span class="dir">models/</span>
+│   ├── __init__.py
+│   ├── bs_product_attr_rule.py    <span class="comment"># BsProductAttrRule + BsProductAttrRuleFilter</span>
+│   ├── product_template.py        <span class="comment"># bs_attr_rule_ids One2many on product.template</span>
+│   └── bs_sale_config_ext.py      <span class="comment"># Extends wizard attr line + wizard onchange</span>
+├── <span class="dir">views/</span>
+│   ├── product_template_views.xml           <span class="comment"># "Attribute Rules" tab; deactivates broken HDC views</span>
+│   └── bs_sale_config_wizard_views.xml      <span class="comment"># Patches value_id domain in wizard tree</span>
+└── <span class="dir">security/</span>
+    └── ir.model.access.csv                  <span class="comment"># group_sale_salesman: full CRUD on both models</span>
+  </div>
+</section>
+
+<!-- ═══ §13 AI PROMPT GUIDE ═══ -->
+<section class="section" id="s13">
+  <div class="section-tag">§ 13</div>
   <h2>AI Prompt Guide — Writing Python Rules with AI</h2>
-  <p class="section-lead">Paste the context block below before every AI request to get accurate rules that follow the v1.5.0 patterns.</p>
+  <p class="section-lead">Paste the context block below before every AI request to get accurate rules that follow the v1.7.0 patterns.</p>
 
   <h3>Context block</h3>
   <div class="prompt-box">
     <div class="prompt-box-label">Paste into Claude / ChatGPT before your request</div>
     <div class="code-block" style="margin:0">
-      <div class="code-header"><span class="code-lang"><span>TEXT</span>AI Context Block v1.5.2</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-      <pre><code class="language-plaintext">You are writing Python rules for BS Dynamic BoM Sale Configurator (Odoo 14 v14.0.1.5.2).
+      <div class="code-header"><span class="code-lang"><span>TEXT</span>AI Context Block v1.7.3</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code class="language-plaintext">You are writing Python rules for BS Dynamic BoM Sale Configurator (Odoo 14 v14.0.1.7.3).
 Rules run inside exec() with a sandboxed locals dict. No imports allowed.
 
 ═══ INJECTED VARIABLES ═══
 values   dict          — wizard inputs; always use .get('key', default)
-                         keys: 'width'(float), 'height'(float), 'uom'(str),
+                         keys: 'width'(float METRES), 'height'(float METRES), 'uom'('m'),
                                + attribute_name: value_name for each selected attribute
 line     mrp.bom.line  — line.product_id, line.product_uom_id
 bom      mrp.bom       — USE bom.env['model'] for ORM access (not bare env)
@@ -1211,23 +1542,18 @@ result = []  valid (conditional exclusion)
 product_name        str          — SO line display name (use on last line)
 product_attributes  dict[str,str] — drives variant lookup; values must pre-exist on template
 
-═══ KEY PATTERNS (v1.5.0) ═══
-1. Line 10 — Formula Dispatcher (attr_name-based)
-   Iterates values dict, skips SKIP set (includes role attrs), looks up PAV,
-   dispatches qty by attr_name (hardcoded). Only pav.component_id is read from PAV.
-   Chain length is parsed from PAV name string "(ทั้งเส้น Y ซม.)".
+═══ KEY PATTERNS (v1.7.3) ═══
+1. Master Rule (§5.11) — RECOMMENDED: single BoM line, 4 cases
+   width/height in METRES. Convert: w_cm = w_m * 100.0
+   Case 1: PAV search by attr_name+val_name → pav.component_id
+   Case 2: qty by attr_name (hardcoded per attribute)
+   Case 3: is_custom PAV fallback — user typed free text
+   Case 4: bom.rate table lookup after attr loop
 
-2. Line 20 — Role-Based Dispatcher (ROLE_ATTRS set)
-   Handles {'รางล่าง', 'รางข้าง', 'ขายื่น'} by attr_name (no PAV field check).
-   รางล่าง stock varies by product code. รางข้าง: 2 × ceil(H/597). Uses already_ids to dedup.
-
-3. Line 25 — Combination Rule
-   Matches two PAV IDs. Use flat inline code — NO def helpers inside exec().
-   Use _pav as temp variable name per PAV search.
-
-4. Line 30 — Product Name Builder
-   result = []. Sets product_name and product_attributes only.
-   Chain label parsed from PAV name string — no numeric PAV fields.
+2. Line 10 — Formula Dispatcher (attr_name-based, for split-line BoMs)
+3. Line 20 — Role-Based Dispatcher — ROLE_ATTRS={'รางล่าง','รางข้าง','ขายื่น'}
+4. Line 25 — Combination Rule — match two PAV IDs; NO def helpers, flat inline code
+5. Line 30 — Name Builder — result=[], sets product_name + product_attributes
 
 ═══ UOM CRITICAL ═══
 uom_id must match component product's UoM category.
@@ -1243,34 +1569,34 @@ NOT: import open eval exec os sys</code></pre>
   <h3>System Prompt for Claude Projects / GPT Custom Instructions</h3>
   <div class="code-block">
     <div class="code-header"><span class="code-lang"><span>TEXT</span>System Prompt</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-    <pre><code class="language-plaintext">You are an expert at writing Python rules for BS Dynamic BoM Sale Configurator (Odoo 14 v14.0.1.5.2).
+    <pre><code class="language-plaintext">You are an expert at writing Python rules for BS Dynamic BoM Sale Configurator (Odoo 14 v14.0.1.7.3).
 
 Rules run in exec() with sandboxed locals. No imports. Key variables:
-  values       — wizard inputs (width, height, uom, + attr_name: value_name)
+  values       — wizard inputs (width/height in METRES, uom='m', + attr_name: value_name)
   bom.env      — ORM access (bom.env['product.attribute.value'].search([...]))
   prev_result  — previous line output ([] for line 1)
   result       — assign this: [{'product_id':int,'name':str,'qty':float}]
 
-v1.5.0 patterns:
-  Line 10: Formula dispatcher — iterate values, skip SKIP set (role attrs excluded),
-           dispatch qty by attr_name. Only pav.component_id read from PAV.
-  Line 20: Role dispatcher — ROLE_ATTRS={'รางล่าง','รางข้าง','ขายื่น'} by attr_name.
-           No PAV role field. Stock varies by product code. Uses already_ids to dedup.
-  Line 25: Combination rule — match two PAV IDs; NO def helpers, use flat inline code
-  Line 30: Name builder — result=[], sets product_name + product_attributes.
-           Chain label parsed from name string "(ทั้งเส้น Y ซม.)".
+v1.7.3 Master Rule (§5.11) — recommended pattern:
+  w_m = values.get('width', 0.0)   # metres
+  w_cm = w_m * 100.0               # cm for stock-length formulas
+  Case 1: PAV.search by attr_name + val_name → pav.component_id
+  Case 2: qty by attr_name (hardcoded per attribute)
+  Case 3: is_custom PAV fallback if Case 1 finds nothing
+  Case 4: bom.rate lookup after attr loop (unconditional)
 
 Rules:
 1. Always values.get('key', default)
-2. Use product_id (int) not name strings
-3. Ceiling: max(int(x/d) + (1 if x%d else 0), 1)
-4. No nested def — flat inline code only</code></pre>
+2. width/height are in METRES — convert to cm when needed: w_cm = w_m * 100
+3. Use product_id or default_code — avoid bare name matching
+4. Ceiling: max(int(x/d) + (1 if x%d else 0), 1)
+5. No nested def — flat inline code only (exec() closure limitation)</code></pre>
   </div>
 </section>
 
 <footer class="site-footer">
   <div class="footer-brand">Dynamic BoM Sale Configurator</div>
-  <div class="footer-meta">bs_dynamic_bom_sale · v14.0.1.5.2 · Basic Solution Co., Ltd.</div>
+  <div class="footer-meta">bs_dynamic_bom_sale · v14.0.1.7.3 · Basic Solution Co., Ltd.</div>
 </footer>
 </main>
 
@@ -1387,15 +1713,17 @@ function ceilDiv(length, stock) {
 }
 
 function computeRollerBlind(vals) {
-  const w = vals.width;
-  const h = vals.height;
+  // v1.7.3: width/height in METRES; convert to cm for stock-length formulas
+  const w_m  = vals.width;
+  const h_m  = vals.height;
+  const w_cm = w_m * 100.0;
+  const h_cm = h_m * 100.0;
 
-  // v1.5.0: SKIP set — role attrs listed explicitly, handled by Line 20
   const SKIP       = new Set(['width','height','uom','produce_qty','cloth_method','piece_no','set_name','รางล่าง','รางข้าง','ขายื่น']);
   const ROLE_ATTRS = new Set(['รางล่าง','รางข้าง','ขายื่น']);
   const result     = [];
 
-  // Line 10 — Formula Dispatcher (qty logic per attr_name, only component from PAV)
+  // Master Rule Case 1+2 — PAV lookup + qty by attr_name
   for (const [attr, valName] of Object.entries(vals)) {
     if (SKIP.has(attr) || !valName || typeof valName !== 'string') continue;
     const attrDb = PAV_DB[attr];
@@ -1405,20 +1733,20 @@ function computeRollerBlind(vals) {
 
     let qty = 1.0, uom = 'ชิ้น';
     if (attr === 'สีรางบน') {
-      // top box rail: ceil(width / 580cm stock)
-      qty = ceilDiv(w, 580);
+      // ceil(w_cm / 580 cm stock)
+      qty = ceilDiv(w_cm, 580);
     } else if (attr === 'ดึงและปรับ') {
-      // extension chain: (2H + 50) / 100 m
-      qty = Math.round((h * 2 + 50) / 100 * 100) / 100;
+      // chain: (2 × h_cm + 50) / 100 → metres
+      qty = Math.round((h_cm * 2 + 50) / 100 * 1000) / 1000;
       uom = 'เมตร';
     } else {
       qty = 1.0;
     }
 
-    if (qty > 0) result.push({ name: pav.component, qty, uom, line: '10' });
+    if (qty > 0) result.push({ name: pav.component, qty, uom, line: 'M' });
   }
 
-  // Line 20 — Role-Based Dispatcher (identified by attr_name, not PAV field)
+  // Master Rule Case 2 (role attrs) — ROLE_ATTRS identified by attr_name
   const alreadyNames = new Set(result.map(r => r.name));
   for (const [attr, valName] of Object.entries(vals)) {
     if (!ROLE_ATTRS.has(attr) || !valName || typeof valName !== 'string') continue;
@@ -1428,20 +1756,20 @@ function computeRollerBlind(vals) {
     if (!pav || !pav.component) continue;
 
     let qty = 1;
-    if (attr === 'รางล่าง')   qty = ceilDiv(w, 600);  // stock=600 for demo (5776 series)
-    else if (attr === 'รางข้าง') qty = 2 * ceilDiv(h, 597);
-    else if (attr === 'ขายื่น') qty = 1;
+    if      (attr === 'รางล่าง') qty = ceilDiv(w_cm, 600); // 5776 series = 600 cm stock
+    else if (attr === 'รางข้าง') qty = 2 * ceilDiv(h_cm, 597);
+    else if (attr === 'ขายื่น')  qty = 1;
 
     if (!alreadyNames.has(pav.component)) {
-      result.push({ name: pav.component, qty, uom: 'ชิ้น', line: '20' });
+      result.push({ name: pav.component, qty, uom: 'ชิ้น', line: 'M' });
       alreadyNames.add(pav.component);
     }
   }
 
-  // Line 30 — Product Name Builder
+  // Name builder
   const topColor = vals['สีรางบน'] || '';
   const siiPaa   = vals['สีใบ'] || '';
-  const parts    = [`W${Math.round(w)}xH${Math.round(h)}cm`];
+  const parts    = [`W${w_m}xH${h_m}m`];
   if (topColor) parts.push('รางบน' + topColor);
   if (siiPaa)   parts.push(siiPaa);
   const productName = 'ม่านม้วน 38มม. ' + parts.join(' ');
@@ -1450,8 +1778,8 @@ function computeRollerBlind(vals) {
 }
 
 function computeAwning(vals) {
-  const w           = vals.width;
-  const h           = vals.height;
+  const w_m         = vals.width;   // metres
+  const h_m         = vals.height;  // metres
   const clothMethod = vals['cloth_method'] || 'front';
   const pieceNo     = parseInt(vals['piece_no']) || 1;
   const switchRate  = vals['switch_rate'] || '';
@@ -1460,10 +1788,9 @@ function computeAwning(vals) {
 
   const clothLabel  = clothMethod === 'back' ? 'กลับ' : 'ไม่กลับ';
   const multiplier  = clothMethod === 'back' ? 1.05 : 1.0;
-  const fabricArea  = Math.round(w * h / 10000 * multiplier * pieceNo * 1000) / 1000;
-  const wM = w / 100, hM = h / 100;
-  const totalFrame  = Math.round(((wM*2 + hM*2) + 4*0.05) * pieceNo * 1000) / 1000;
-  const productName = `กันสาด ${Math.round(w)}×${Math.round(h)}cm ${clothLabel} ${pieceNo}ชิ้น`;
+  const fabricArea  = Math.round(w_m * h_m * multiplier * pieceNo * 1000) / 1000;
+  const totalFrame  = Math.round(((w_m*2 + h_m*2) + 4*0.05) * pieceNo * 1000) / 1000;
+  const productName = `กันสาด ${w_m}×${h_m}m ${clothLabel} ${pieceNo}ชิ้น`;
 
   const result = [];
   result.push({ name: 'ผ้ากันสาด', qty: fabricArea, uom: 'm²', line: 'I' });
