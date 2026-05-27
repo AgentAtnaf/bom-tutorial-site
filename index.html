@@ -670,7 +670,7 @@ component = pav.component_id  # product.product record</code></pre>
         <tr><td>prev_result</td><td>list[dict]</td><td>Output of the previous BoM line (empty for line 1)</td></tr>
         <tr><td>result</td><td>list[dict]</td><td><span class="tag-pill tag-coral">Assign this</span></td></tr>
         <tr><td>product_name</td><td>str</td><td><span class="tag-pill tag-warm">Optional</span> — overrides SO line display name</td></tr>
-        <tr><td>product_attributes</td><td>dict</td><td><span class="tag-pill tag-warm">Optional</span> — drives variant lookup at confirmation</td></tr>
+        <tr><td>product_attributes</td><td>dict</td><td><span class="tag-pill" style="background:var(--red-bg);color:var(--red);border:1px solid var(--red-border)">Removed v1.8.1</span> — raises <code>UserError</code> if set; variant identity is now wizard-only</td></tr>
       </tbody>
     </table>
   </div>
@@ -924,20 +924,20 @@ else:
   </div>
 
   <h3>5.7 Pattern — Product Name Builder (Line 30)</h3>
-  <p>Produces no components (<code>result = []</code>). Builds <code>product_name</code> and <code>product_attributes</code> for variant resolution at SO confirmation.</p>
+  <p>Produces no components (<code>result = []</code>). Sets <code>product_name</code> to build a human-readable MO label. Since v1.8.1, variant identity is <strong>wizard-only</strong> — <code>product_attributes</code> is forbidden in rules.</p>
 
   <div class="rule-card">
     <div class="rule-card-header">
       <div class="rule-letter">30</div>
       <div>
         <div class="rule-title">Product Name Builder</div>
-        <div class="rule-desc">Sets product_name and product_attributes — no components returned</div>
+        <div class="rule-desc">Sets product_name only — no components, no product_attributes</div>
       </div>
     </div>
     <div class="rule-body">
       <div class="code-block">
         <div class="code-header"><span class="code-lang"><span>PYTHON</span>Line 30</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-        <pre><code class="language-python"># Line 30 — Product Name Builder + Variant Attributes
+        <pre><code class="language-python"># Line 30 — Product Name Builder
 w = int(values.get('width',  0))
 h = int(values.get('height', 0))
 u = values.get('uom', 'cm')
@@ -966,11 +966,6 @@ if sii_bai:     parts.append(sii_bai)
 
 product_name = base_product.name + ' ' + ' '.join(parts)
 
-product_attributes = {k: v for k, v in {
-    'สีรางบน':    top_color,
-    # add other variant-driving attributes here
-}.items() if v}
-
 result = []</code></pre>
       </div>
     </div>
@@ -980,7 +975,14 @@ result = []</code></pre>
     <div class="callout-icon">⚡</div>
     <div class="callout-body">
       <div class="callout-title">product_name → MO label</div>
-      <p>When <code>product_name</code> is set in a rule and differs from the base product template name, it is written to <code>product_description_variants</code> on the Manufacturing Order. This overrides the auto-generated <code>Template (Attr1: Val1, …)</code> label, giving the MO a human-readable description (e.g. <code>ม่านม้วน W150xH220cm ขาว</code>). Variant creation itself remains <strong>rule-only</strong> — <code>product_attributes</code> is the sole driver; the wizard's attribute selections do not auto-populate it.</p>
+      <p>When <code>product_name</code> is set and differs from the base product template name, it is written to <code>product_description_variants</code> on the Manufacturing Order — giving the MO a human-readable description (e.g. <code>ม่านม้วน W150xH220cm ขาว</code>) instead of the auto-generated <code>Template (Attr1: Val1, …)</code> label.</p>
+    </div>
+  </div>
+  <div class="callout gotcha">
+    <div class="callout-icon">▲</div>
+    <div class="callout-body">
+      <div class="callout-title">product_attributes is forbidden since v1.8.1</div>
+      <p>Assigning <code>product_attributes</code> in a rule raises <code>UserError</code>. Variant identity is now <strong>wizard-only</strong>: <code>action_apply</code> builds the attribute map from <code>attr_line_ids</code>; <code>_bs_refresh_config</code> builds it from <code>bs_config_json</code> filtered by the template's PTAL attribute names. Remove any <code>product_attributes = {...}</code> lines from existing rules.</p>
     </div>
   </div>
 
@@ -1315,7 +1317,7 @@ qty=3.0    เรทจับกลาง 3 ตัว</code></pre>
   <div class="callout gotcha"><div class="callout-icon">▲</div><div class="callout-body"><div class="callout-title">_resolve_product() fails</div><p><strong>Cause:</strong> No <code>product.product</code> matches <code>product_id</code>, <code>default_code</code>, or <code>name</code>. <strong>Fix:</strong> Always use <code>product_id</code> (integer ID) — name matching breaks across environments.</p></div></div>
 
   <h3>"Attribute 'X' is not defined"</h3>
-  <div class="callout gotcha"><div class="callout-icon">▲</div><div class="callout-body"><div class="callout-title">Attribute name not in product.attribute at all</div><p><strong>Cause:</strong> <code>product_attributes</code> references an attribute name that does not exist in <code>product.attribute</code>. Raises a <code>RedirectWarning</code> with a "Go to Attributes" button that opens the attribute list directly.<br><strong>Fix:</strong> Create the attribute in Configuration → Attributes and add it to the product template's Variants tab with <code>Variants = Dynamic</code>.</p></div></div>
+  <div class="callout gotcha"><div class="callout-icon">▲</div><div class="callout-body"><div class="callout-title">Attribute name not in product.attribute at all</div><p><strong>Cause:</strong> A wizard attribute selection references an attribute name that does not exist in <code>product.attribute</code>. Raises a <code>RedirectWarning</code> with a "Go to Attributes" button that opens the attribute list directly.<br><strong>Fix:</strong> Create the attribute in Configuration → Attributes and add it to the product template's Variants tab with <code>Variants = Dynamic</code>.</p></div></div>
 
   <h3>"Attribute 'X' is set to '…' variant mode"</h3>
   <div class="callout gotcha"><div class="callout-icon">▲</div><div class="callout-body"><div class="callout-title">Attribute exists but Variants ≠ Dynamic</div><p><strong>Cause:</strong> The attribute exists but its <code>Variants</code> field is not <code>Dynamic</code> (<code>no_variant</code> or <code>always</code>). Raises a <code>RedirectWarning</code> with an "Open Attribute" button.<br><strong>Fix:</strong> Open the attribute form and change <code>Variants</code> to <code>Dynamic</code>.</p></div></div>
@@ -1628,10 +1630,10 @@ result  list[dict]  — {'product_id': int, 'name': str, 'qty': float}
 result = []  valid (conditional exclusion)
 
 ═══ OPTIONAL OUTPUT ═══
-product_name        str          — SO line display name (use on last line)
-product_attributes  dict[str,str] — drives variant lookup; values must pre-exist on template
+product_name        str   — SO line display name + MO product_description_variants (use on last line)
+product_attributes  FORBIDDEN since v1.8.1 — raises UserError if assigned; variant identity is wizard-only
 
-═══ KEY PATTERNS (v1.7.3) ═══
+═══ KEY PATTERNS (v1.8.1) ═══
 1. Master Rule (§5.11) — RECOMMENDED: single BoM line, 4 cases
    width/height in METRES. Convert: w_cm = w_m * 100.0
    Case 1: PAV search by attr_name+val_name → pav.component_id
@@ -1642,7 +1644,7 @@ product_attributes  dict[str,str] — drives variant lookup; values must pre-exi
 2. Line 10 — Formula Dispatcher (attr_name-based, for split-line BoMs)
 3. Line 20 — Role-Based Dispatcher — ROLE_ATTRS={'รางล่าง','รางข้าง','ขายื่น'}
 4. Line 25 — Combination Rule — match two PAV IDs; NO def helpers, flat inline code
-5. Line 30 — Name Builder — result=[], sets product_name + product_attributes
+5. Line 30 — Name Builder — result=[], sets product_name only (NO product_attributes)
 
 ═══ UOM CRITICAL ═══
 uom_id must match component product's UoM category.
@@ -1658,15 +1660,19 @@ NOT: import open eval exec os sys</code></pre>
   <h3>System Prompt for Claude Projects / GPT Custom Instructions</h3>
   <div class="code-block">
     <div class="code-header"><span class="code-lang"><span>TEXT</span>System Prompt</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-    <pre><code class="language-plaintext">You are an expert at writing Python rules for BS Dynamic BoM Sale Configurator (Odoo 14 v14.0.1.7.8).
+    <pre><code class="language-plaintext">You are an expert at writing Python rules for BS Dynamic BoM Sale Configurator (Odoo 14 v14.0.1.8.1).
 
 Rules run in exec() with sandboxed locals. No imports. Key variables:
   values       — wizard inputs (width/height in METRES, uom='m', + attr_name: value_name)
   bom.env      — ORM access (bom.env['product.attribute.value'].search([...]))
   prev_result  — previous line output ([] for line 1)
   result       — assign this: [{'product_id':int,'name':str,'qty':float}]
+  product_name — optional str, sets SO line display name + MO product_description_variants
 
-v1.7.3 Master Rule (§5.11) — recommended pattern:
+IMPORTANT v1.8.1: DO NOT assign product_attributes — it raises UserError. Variant identity
+is now wizard-only (built from the wizard's attr_line_ids, not from rule output).
+
+v1.8.1 Master Rule (§5.11) — recommended pattern:
   w_m = values.get('width', 0.0)   # metres
   w_cm = w_m * 100.0               # cm for stock-length formulas
   Case 1: PAV.search by attr_name + val_name → pav.component_id
@@ -1679,7 +1685,8 @@ Rules:
 2. width/height are in METRES — convert to cm when needed: w_cm = w_m * 100
 3. Use product_id or default_code — avoid bare name matching
 4. Ceiling: max(int(x/d) + (1 if x%d else 0), 1)
-5. No nested def — flat inline code only (exec() closure limitation)</code></pre>
+5. No nested def — flat inline code only (exec() closure limitation)
+6. Never assign product_attributes (raises UserError since v1.8.1)</code></pre>
   </div>
 </section>
 
