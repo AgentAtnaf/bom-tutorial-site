@@ -337,7 +337,7 @@ tbody td:first-child{font-family:'JetBrains Mono',monospace;font-size:.77rem;col
   <div class="callout tip">
     <div class="callout-icon">✓</div>
     <div class="callout-body">
-      <div class="callout-title">Companion Module — bs_attr_conditional_rule v14.0.1.1.2</div>
+      <div class="callout-title">Companion Module — bs_attr_conditional_rule v14.0.1.2.0</div>
       <p>Adds conditional attribute rules to the wizard: auto-fill, value filtering, and blacklisting based on trigger attribute values. See <strong>§12</strong> for full documentation.</p>
     </div>
   </div>
@@ -504,12 +504,24 @@ tbody td:first-child{font-family:'JetBrains Mono',monospace;font-size:.77rem;col
   </div>
 
   <h3>2.2 Variants Tab — Attributes</h3>
-  <p>Add the attributes your BoM rules will reference. Use <code>create_variant = dynamic</code> for all attributes.</p>
+  <p>Add the attributes that your BoM rules will reference. All attributes <strong>must be pre-defined here</strong> — neither the wizard nor BoM Python rules are allowed to create attributes or attribute values automatically.</p>
+  <p>Each attribute must have <code>Variants</code> set to <strong>Dynamic</strong> so Odoo does not pre-create every possible combination and so PTAVs participate in the variant combination key used by <code>_bs_find_or_create_variant</code>.</p>
   <div class="callout gotcha">
     <div class="callout-icon">▲</div>
     <div class="callout-body">
-      <div class="callout-title">All attribute values must exist before SO confirmation</div>
-      <p><code>_find_or_create_variant()</code> looks up PTAVs. If a value set by a rule does not exist on the template, confirmation fails with a clear error listing available values.</p>
+      <div class="callout-title">Strict lookup-only policy (v14.0.1.8.0+)</div>
+      <p><code>_bs_find_or_create_variant</code> never creates attributes or attribute values. It raises immediately if either is missing or misconfigured:</p>
+      <div class="table-wrap" style="margin-top:10px">
+        <table>
+          <thead><tr><th>Situation</th><th>Error type</th><th>Action button</th></tr></thead>
+          <tbody>
+            <tr><td>Attribute name not found</td><td><code>RedirectWarning</code></td><td>"Go to Attributes" → opens attribute list</td></tr>
+            <tr><td>Attribute found, <code>Variants ≠ Dynamic</code></td><td><code>RedirectWarning</code></td><td>"Open Attribute" → opens that attribute's form</td></tr>
+            <tr><td>Attribute value not on this template</td><td><code>UserError</code></td><td>Lists available values for that attribute</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="margin-top:8px">Creating <code>product.product</code> variants (the combination record) is still allowed — only <code>product.attribute</code> and <code>product.attribute.value</code> creation is blocked.</p>
     </div>
   </div>
   <p><strong>Example — ม่านม้วน (Roller Blind):</strong></p>
@@ -713,7 +725,7 @@ qty = max(n + (1 if width % stock else 0), 1)</code></pre>
 # Qty logic is hardcoded per attribute name; only pav.component_id is used from PAV.
 # Role-based attrs (รางล่าง, รางข้าง, ขายื่น) are handled in Line 20.
 
-SKIP = {'width', 'height', 'uom', 'produce_qty', 'cloth_method', 'piece_no', 'set_name',
+SKIP = {'width', 'height', 'uom', 'produce_qty',
         'รางล่าง', 'รางข้าง', 'ขายื่น'}
 
 w = values.get('width',  0.0)
@@ -964,6 +976,14 @@ result = []</code></pre>
     </div>
   </div>
 
+  <div class="callout note">
+    <div class="callout-icon">⚡</div>
+    <div class="callout-body">
+      <div class="callout-title">product_name → MO label</div>
+      <p>When <code>product_name</code> is set in a rule and differs from the base product template name, it is written to <code>product_description_variants</code> on the Manufacturing Order. This overrides the auto-generated <code>Template (Attr1: Val1, …)</code> label, giving the MO a human-readable description (e.g. <code>ม่านม้วน W150xH220cm ขาว</code>). Variant creation itself remains <strong>rule-only</strong> — <code>product_attributes</code> is the sole driver; the wizard's attribute selections do not auto-populate it.</p>
+    </div>
+  </div>
+
   <h3>5.8 Using <code>prev_result</code></h3>
   <div class="code-block">
     <div class="code-header"><span class="code-lang"><span>PYTHON</span>prev_result — dedup pattern</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
@@ -1011,7 +1031,6 @@ h_cm = h_m * 100.0
 
 SKIP = {
     'width', 'height', 'uom', 'produce_qty',
-    'cloth_method', 'piece_no', 'set_name',
 }
 
 for attr_name, val_name in values.items():
@@ -1168,32 +1187,27 @@ qty=3.0    เรทจับกลาง 3 ตัว</code></pre>
 <section class="section" id="s06">
   <div class="section-tag">§ 06</div>
   <h2>Wizard — Category-Specific Parameter Sections</h2>
-  <p class="section-lead">The wizard auto-shows a dedicated section based on <code>categ_id.complete_name</code>, plus a dynamic <strong>Attribute Values</strong> group for all product template attributes.</p>
+  <p class="section-lead">The wizard checks the product's <code>categ_id.complete_name</code> to set <code>bs_categ_group</code>, which controls which dimension section is shown.</p>
 
   <div class="table-wrap">
     <table>
-      <thead><tr><th>Category name contains</th><th>Section shown</th></tr></thead>
+      <thead><tr><th>Category name contains</th><th>bs_categ_group</th><th>Section shown</th></tr></thead>
       <tbody>
-        <tr><td>กันสาด</td><td>กันสาด — Awning Options</td></tr>
-        <tr><td><em>(anything else)</em></td><td>Extra Options (raw JSON textarea)</td></tr>
+        <tr><td><code>ม่านม้วน</code></td><td><code>muan_muan</code></td><td>Roller Blind dimension fields</td></tr>
+        <tr><td><em>(anything else)</em></td><td><code>''</code></td><td>Extra Options (raw JSON textarea)</td></tr>
       </tbody>
     </table>
   </div>
-
-  <h3>6.1 กันสาด Parameters</h3>
-  <div class="table-wrap">
-    <table>
-      <thead><tr><th>Wizard Field</th><th>values key</th><th>Type</th></tr></thead>
-      <tbody>
-        <tr><td>หน้าผ้า</td><td>cloth_method</td><td><code>'front'</code> or <code>'back'</code></td></tr>
-        <tr><td>Piece No</td><td>piece_no</td><td><code>'1'</code>, <code>'2'</code>, <code>'3'</code></td></tr>
-        <tr><td>Set Name</td><td>set_name</td><td><code>'1'</code> … <code>'10'</code></td></tr>
-      </tbody>
-    </table>
+  <div class="callout info">
+    <div class="callout-icon">ℹ</div>
+    <div class="callout-body">
+      <div class="callout-title">กันสาด parameters removed in v1.7.4</div>
+      <p>กันสาด (Awning) parameters (<code>cloth_method</code>, <code>piece_no</code>, <code>set_name</code>) were removed in v1.7.4. If a BoM rule references these keys they will simply not be present in <code>values</code>.</p>
+    </div>
   </div>
 
-  <h3>6.2 Attribute Values Section (Dynamic)</h3>
-  <p>All attributes from the product template are shown dynamically. The user selects one value per attribute. The selected value name is packed into <code>values[attribute_name] = value_name</code>.</p>
+  <h3>6.1 Attribute Values Section</h3>
+  <p>All attributes from the product template are shown dynamically in the <strong>Attribute Values</strong> group. The user selects one value per attribute. The selected value name is packed into <code>values[attribute_name] = value_name</code>.</p>
   <p>Standard dimensions always present in <code>values</code>:</p>
   <div class="table-wrap">
     <table>
@@ -1223,24 +1237,36 @@ qty=3.0    เรทจับกลาง 3 ตัว</code></pre>
 ├── __manifest__.py
 ├── <span class="dir">models/</span>
 │   ├── __init__.py
-│   ├── sale_order.py               <span class="comment"># action_bs_config_start, action_confirm override</span>
+│   ├── sale_order.py               <span class="comment"># action_bs_config_start; action_confirm (block unconfigured + create MOs); bs_mo_count + action_bs_view_mos (MO smart button)</span>
 │   ├── sale_order_line.py          <span class="comment"># bs_* fields, action_bs_configure, _bs_create_variant_and_mo</span>
 │   ├── product_attribute_value.py  <span class="comment"># component_id field only</span>
 │   ├── <span class="new-file">product_template.py</span>         <span class="comment"># product_group field</span>
-│   └── <span class="new-file">mrp_production.py</span>           <span class="comment"># sale_id back-reference; product_group on stock.move</span>
+│   └── <span class="new-file">mrp_production.py</span>           <span class="comment"># sale_id back-reference (header); product_group on stock.move</span>
 ├── <span class="dir">wizard/</span>
 │   ├── __init__.py
-│   ├── bs_sale_config_wizard.py
-│   └── bs_sale_config_wizard_views.xml
+│   ├── bs_sale_config_wizard.py        <span class="comment"># main wizard model</span>
+│   └── bs_sale_config_wizard_views.xml <span class="comment"># wizard form</span>
 ├── <span class="dir">views/</span>
-│   ├── sale_order_views.xml
+│   ├── sale_order_views.xml            <span class="comment"># BoM tab; "Configure Product" button; MO smart button</span>
 │   ├── product_attribute_value_views.xml  <span class="comment"># component_id column on attribute values tree</span>
-│   ├── <span class="new-file">product_template_views.xml</span>
-│   └── <span class="new-file">mrp_production_views.xml</span>           <span class="comment"># sale_id on MO header</span>
+│   ├── <span class="new-file">product_template_views.xml</span>      <span class="comment"># product_group field</span>
+│   └── <span class="new-file">mrp_production_views.xml</span>        <span class="comment"># sale_id in MO header group_extra_info; product_group on components tab</span>
 ├── <span class="dir">security/</span>
 │   └── ir.model.access.csv
 └── BS_DYNAMIC_BOM_TUTORIAL.md
   </div>
+
+  <h3>Key Fields on <code>sale.order</code></h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>bs_mo_count</td><td>Integer (computed)</td><td>Count of <code>mrp.production</code> records where <code>sale_id = this SO</code>. Used by the MO smart button.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p><strong>MO Smart Button:</strong> A stat button with a factory icon (🏭) appears on the SO form header whenever <code>bs_mo_count &gt; 0</code>. Clicking it opens a filtered list of all Manufacturing Orders created from this SO's BS lines.</p>
+  <p><strong>Confirm-block:</strong> <code>action_confirm</code> raises a <code>UserError</code> before processing if any SO line has a BS BoM product that was not put through the wizard (<code>bs_is_configured = False</code>). The error message lists each unconfigured product by name.</p>
 
   <h3>Key Fields on <code>sale.order.line</code></h3>
   <div class="table-wrap">
@@ -1288,8 +1314,14 @@ qty=3.0    เรทจับกลาง 3 ตัว</code></pre>
   <h3>"Cannot resolve component: [name]"</h3>
   <div class="callout gotcha"><div class="callout-icon">▲</div><div class="callout-body"><div class="callout-title">_resolve_product() fails</div><p><strong>Cause:</strong> No <code>product.product</code> matches <code>product_id</code>, <code>default_code</code>, or <code>name</code>. <strong>Fix:</strong> Always use <code>product_id</code> (integer ID) — name matching breaks across environments.</p></div></div>
 
+  <h3>"Attribute 'X' is not defined"</h3>
+  <div class="callout gotcha"><div class="callout-icon">▲</div><div class="callout-body"><div class="callout-title">Attribute name not in product.attribute at all</div><p><strong>Cause:</strong> <code>product_attributes</code> references an attribute name that does not exist in <code>product.attribute</code>. Raises a <code>RedirectWarning</code> with a "Go to Attributes" button that opens the attribute list directly.<br><strong>Fix:</strong> Create the attribute in Configuration → Attributes and add it to the product template's Variants tab with <code>Variants = Dynamic</code>.</p></div></div>
+
+  <h3>"Attribute 'X' is set to '…' variant mode"</h3>
+  <div class="callout gotcha"><div class="callout-icon">▲</div><div class="callout-body"><div class="callout-title">Attribute exists but Variants ≠ Dynamic</div><p><strong>Cause:</strong> The attribute exists but its <code>Variants</code> field is not <code>Dynamic</code> (<code>no_variant</code> or <code>always</code>). Raises a <code>RedirectWarning</code> with an "Open Attribute" button.<br><strong>Fix:</strong> Open the attribute form and change <code>Variants</code> to <code>Dynamic</code>.</p></div></div>
+
   <h3>"Attribute value X is not configured on product Y"</h3>
-  <div class="callout gotcha"><div class="callout-icon">▲</div><div class="callout-body"><div class="callout-title">PTAV missing on template</div><p><strong>Fix:</strong> Every value referenced in <code>product_attributes</code> must appear in the product template's Variants tab.</p></div></div>
+  <div class="callout gotcha"><div class="callout-icon">▲</div><div class="callout-body"><div class="callout-title">Value missing from template Variants tab</div><p><strong>Cause:</strong> The attribute is Dynamic but the specific value has no PTAV on this product template — never added or removed from the Variants tab. Raises a <code>UserError</code> listing all currently available values for that attribute.<br><strong>Fix:</strong> Add the missing value to the attribute line on the product template's Variants tab.</p></div></div>
 
   <h3>"Unit of measure has a different category"</h3>
   <div class="callout gotcha"><div class="callout-icon">▲</div><div class="callout-body"><div class="callout-title">UoM category mismatch on MO move</div><p><strong>Fix:</strong> (1) Identify component product UoM. (2) Update BoM line UoM to match. (3) Use <code>line.product_uom_id.id</code> in rule; recalculate qty to that UoM (e.g. piece count via ceiling division).</p></div></div>
@@ -1308,13 +1340,15 @@ qty=3.0    เรทจับกลาง 3 ตัว</code></pre>
   <ul class="checklist">
     <li><span class="step-num">1</span>Open Sales → New Quotation</li>
     <li><span class="step-num">2</span>Add a product line with a BS Dynamic BoM product</li>
-    <li><span class="step-num">3</span>Click <strong>Configure Product</strong> → BS wizard opens</li>
-    <li><span class="step-num">4</span>Fill width / height / attribute values → <strong>Preview</strong> → component list appears; SO unchanged</li>
-    <li><span class="step-num">5</span>Click <strong>Apply to SO</strong> → line shows <code>Configured</code> badge; BoM tab appears</li>
-    <li><span class="step-num">6</span>Click gear icon → wizard re-opens with all previous values pre-filled</li>
-    <li><span class="step-num">7</span>Modify values → Apply again → log updates, badge stays <code>Configured</code></li>
-    <li><span class="step-num">8</span>Confirm SO → variant created, MO created, line → <code>Confirmed</code></li>
-    <li><span class="step-num">9</span>Open MO → verify component products, quantities, UoMs all correct</li>
+    <li><span class="step-num">3</span><strong>Confirm-block test:</strong> Try to confirm the SO before configuring → should raise <code>UserError</code> listing the unconfigured product name</li>
+    <li><span class="step-num">4</span>Click <strong>Configure Product</strong> (header button) → BS wizard opens</li>
+    <li><span class="step-num">5</span>Fill width / height / attribute values → click <strong>Preview</strong> → component list appears; SO unchanged</li>
+    <li><span class="step-num">6</span>Click <strong>Apply to SO</strong> → line shows <code>Configured</code> badge; "BoM for Sales Order" tab appears</li>
+    <li><span class="step-num">7</span>Click the gear icon on the SO line → wizard re-opens with all previous values pre-filled</li>
+    <li><span class="step-num">8</span>Modify values → Apply again → log updates, badge stays <code>Configured</code></li>
+    <li><span class="step-num">9</span>Confirm SO → variant created, MO created, line transitions to <code>Confirmed</code></li>
+    <li><span class="step-num">10</span><strong>MO smart button:</strong> SO form header now shows a 🏭 Manufacturing Orders button with count — click to verify it opens the correct MO(s)</li>
+    <li><span class="step-num">11</span>Open MO → verify: correct component products, quantities match rule output, UoMs correct; <code>Sale Order</code> field in header shows the originating SO; <code>product_description_variants</code> shows the rule-built name (if <code>product_name</code> was set in the rule)</li>
   </ul>
 
   <h3>Default Test Case (BoM id=1756, รุ่นโซ่ดึง 38 มิล)</h3>
@@ -1374,6 +1408,7 @@ qty=3.0    เรทจับกลาง 3 ตัว</code></pre>
         <tr><td>1.7.6</td><td>Move <code>sale_id</code> from MO Miscellaneous tab to main header <code>group_extra_info</code>; add <code>bs_mo_count</code> computed field on <code>sale.order</code>; add MO smart button (🏭) on SO form</td></tr>
         <tr><td>1.7.7</td><td>Block SO confirmation if any BS BoM line is unconfigured; raises <code>UserError</code> listing product names before creating any MO</td></tr>
         <tr><td>1.7.8</td><td><code>product_description_variants</code> on MO set from rule's <code>product_name</code> (when it differs from the template name); variant creation is rule-only — wizard attr selections no longer auto-fill <code>product_attributes</code></td></tr>
+        <tr><td>1.8.0</td><td><code>_bs_find_or_create_variant</code> is now strictly lookup-only: attributes and values must be pre-defined on the product template; missing attribute → <code>RedirectWarning</code> with redirect to attribute list/form; wrong <code>create_variant</code> mode → <code>RedirectWarning</code> to fix it manually; missing value → <code>UserError</code> with available values listed</td></tr>
       </tbody>
     </table>
   </div>
@@ -1382,8 +1417,8 @@ qty=3.0    เรทจับกลาง 3 ตัว</code></pre>
 <!-- ═══ §12 COMPANION MODULE ═══ -->
 <section class="section" id="s12">
   <div class="section-tag">§ 12</div>
-  <h2>Companion Module — <code>bs_attr_conditional_rule</code> <small style="font-size:.7em;font-weight:400;color:var(--text-muted)">v14.0.1.1.2</small></h2>
-  <p class="section-lead">Adds conditional attribute rules to the wizard: auto-fill, value filtering (whitelist), and value blacklisting — all triggered by a specific attribute value selection. Effects reset when the trigger is cleared.</p>
+  <h2>Companion Module — <code>bs_attr_conditional_rule</code> <small style="font-size:.7em;font-weight:400;color:var(--text-muted)">v14.0.1.2.0</small></h2>
+  <p class="section-lead">Adds a UI tab on the product template to define conditional attribute rules. When a specific attribute value is selected in the BS wizard, rules automatically <strong>fill in</strong> other attribute values, <strong>filter</strong> available options, and/or <strong>exclude</strong> specific values. All effects reset when the trigger value is deselected.</p>
 
   <h3>12.1 How It Works</h3>
   <div class="code-block">
@@ -1414,9 +1449,9 @@ In Wizard:
     <li>Click <strong>Add a line</strong>:
       <ul>
         <li><strong>Trigger Attribute</strong> — PTAL on this product that acts as the trigger</li>
-        <li><strong>Trigger Value</strong> — PAV that fires the rule</li>
-        <li><strong>Set These Values</strong> — PAVs to auto-fill in the wizard (fills empty slots only)</li>
-        <li><strong>Cannot Select</strong> — PAVs that become unavailable while this rule is active</li>
+        <li><strong>Trigger Value</strong> — only values from the selected trigger PTAL are shown</li>
+        <li><strong>Set These Values</strong> — PAVs to auto-fill in the wizard (one per attribute, fills empty slots only)</li>
+        <li><strong>Cannot Select</strong> — PAVs that become unavailable while this rule is active (blacklist)</li>
       </ul>
     </li>
     <li>To add whitelist filters, open the rule row → <strong>Value Filters</strong> sub-table:
@@ -1433,8 +1468,8 @@ In Wizard:
   <div class="callout info">
     <div class="callout-icon">ℹ</div>
     <div class="callout-body">
-      <div class="callout-title">Multiple rules with the same trigger</div>
-      <p>All contribute: auto-fill uses first-rule-wins per attribute; whitelist filters union across rules; exclusions accumulate. If both a whitelist and exclusion target the same attribute, the excluded value is removed from the whitelist. All dropdowns are scoped to the product's Variants tab only.</p>
+      <div class="callout-title">Search by attribute name</div>
+      <p>In all three PAV pickers (Set These Values, Cannot Select, Allowed Values), typing the attribute name (e.g. "ข้อต่อ") returns all values of that attribute — even values whose value name does not contain the search text. <code>_name_search</code> on <code>product.attribute.value</code> is extended to also search by <code>attribute_id.name</code>. All dropdowns are scoped to this product's Variants tab only.</p>
     </div>
   </div>
 
@@ -1447,10 +1482,13 @@ In Wizard:
         <tr><td>product_tmpl_id</td><td>Many2one product.template</td><td>Owning product</td></tr>
         <tr><td>sequence</td><td>Integer</td><td>Evaluation order (lower = first)</td></tr>
         <tr><td>trigger_ptal_id</td><td>Many2one product.template.attribute.line</td><td>Trigger attribute line</td></tr>
+        <tr><td>trigger_attr_id</td><td>Many2one product.attribute</td><td>Related — derived from PTAL</td></tr>
         <tr><td>trigger_value_id</td><td>Many2one product.attribute.value</td><td>Value that fires the rule</td></tr>
         <tr><td>apply_value_ids</td><td>Many2many product.attribute.value</td><td>PAVs to auto-fill when triggered</td></tr>
         <tr><td>exclude_value_ids</td><td>Many2many product.attribute.value</td><td>PAVs that cannot be selected while rule is active</td></tr>
         <tr><td>filter_line_ids</td><td>One2many bs.product.attr.rule.filter</td><td>Whitelist value filters per attribute</td></tr>
+        <tr><td>tmpl_pav_ids</td><td>Many2many product.attribute.value (computed)</td><td>All PAVs from this product's PTALs — used as view domain for pickers</td></tr>
+        <tr><td>trigger_ptal_pav_ids</td><td>Many2many product.attribute.value (computed)</td><td>PAVs from the trigger PTAL — used as view domain for trigger_value_id</td></tr>
       </tbody>
     </table>
   </div>
@@ -1461,64 +1499,104 @@ In Wizard:
       <tbody>
         <tr><td>rule_id</td><td>Many2one bs.product.attr.rule</td><td>Parent rule</td></tr>
         <tr><td>target_ptal_id</td><td>Many2one product.template.attribute.line</td><td>Attribute to whitelist</td></tr>
+        <tr><td>target_attr_id</td><td>Many2one product.attribute</td><td>Related — derived from PTAL</td></tr>
         <tr><td>allowed_value_ids</td><td>Many2many product.attribute.value</td><td>Only these values appear in the wizard</td></tr>
+        <tr><td>target_ptal_pav_ids</td><td>Many2many product.attribute.value (computed)</td><td>PAVs from the target PTAL — view domain for allowed_value_ids</td></tr>
       </tbody>
     </table>
   </div>
 
   <h3>12.4 Wizard Behaviour</h3>
-  <p><code>_onchange_apply_attr_rules</code> fires on every <code>attr_line_ids</code> change:</p>
+  <h4>effective_value_ids on bs.sale.config.attr.line</h4>
+  <p>Each wizard attribute line carries an <code>effective_value_ids</code> Many2many (relation table <code>bs_wizard_eff_value_rel</code>). It holds the currently-allowed PAVs for that line:</p>
+  <ul style="margin-bottom:12px;font-size:.91rem;color:var(--text-mid)">
+    <li><strong>No active filter:</strong> equals the full PTAL <code>value_ids</code> (all values available)</li>
+    <li><strong>Filter active:</strong> subset of PTAL values defined by the matching rule's filter/exclusion</li>
+  </ul>
+  <p>The <code>value_id</code> dropdown domain is always <code>[('id', 'in', effective_value_ids)]</code>. This avoids the <code>CreateListFromArrayLike</code> crash that Odoo 14 produces when a <code>domain</code> attribute references a <code>Char</code> field.</p>
+
+  <h4>_onchange_apply_attr_rules</h4>
+  <p>Fires on every <code>attr_line_ids</code> change (iterative chain loop, MAX_CHAIN = 5):</p>
   <ol>
-    <li>Snapshot current line data; collect selected PAV ids</li>
-    <li>Determine <strong>active rules</strong> (trigger value currently selected)</li>
-    <li>Build <strong>auto-fill map</strong> (<code>attribute → PAV</code>): first active rule wins per attribute</li>
-    <li>Build <strong>value filters</strong> map: whitelist from <code>filter_line_ids</code> (union); exclusions from <code>exclude_value_ids</code> (accumulated)</li>
-    <li>Apply auto-fill (empty slots only) and clear values outside the allowed set</li>
-    <li>When trigger is deselected: all lines rebuilt with <code>is_filtered=False</code>, restoring full dropdowns</li>
+    <li>Snapshot current line data (<code>_id</code>, <code>attribute_line_id</code>, <code>value_id</code>, <code>custom_value</code>, <code>sequence</code>)</li>
+    <li><code>any_filtered</code> — True if any line's <code>effective_value_ids</code> differs from its full PTAL set</li>
+    <li><strong>Iterative chain loop</strong> — each pass detects rules newly triggered by values auto-filled in the previous pass (Rule A fills B, Rule B fills C…):
+      <ul>
+        <li>Collect <code>auto_fill</code> map (<code>attribute → PAV</code>): first-rule-wins per attribute</li>
+        <li>Collect <code>value_filters</code> map (<code>ptal → set of allowed PAV ids</code>): whitelists union; exclusions discard from allowed set</li>
+        <li>Apply auto-fill to empty slots; update <code>current_selected</code> for next pass</li>
+      </ul>
+    </li>
+    <li>Skip rebuild if <code>not auto_fill and not value_filters and not any_filtered</code></li>
+    <li>Apply value filters — clear <code>value_id</code> if it falls outside the allowed set</li>
+    <li>Rebuild <code>attr_line_ids</code> using <strong><code>(1, id, vals)</code> update commands</strong> (never <code>(5,)</code> delete-all). Update-in-place preserves virtual record IDs so async <code>_selectRow</code> callbacks can still resolve their record reference.</li>
   </ol>
-  <p>Wizard <code>value_id</code> dropdown domain:</p>
-  <div class="code-block">
-    <div class="code-header"><span class="code-lang"><span>XML</span>value_id domain</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-    <pre><code class="language-xml">[('id', 'in', allowed_value_ids)] if is_filtered else [('id', 'in', ptal_value_ids)]</code></pre>
-  </div>
-  <div class="callout note">
-    <div class="callout-icon">⚡</div>
-    <div class="callout-body">
-      <div class="callout-title">ptal_value_ids implementation (v14.0.1.1.2)</div>
-      <p>This field is a proper <code>Many2many</code> with its own relation table (<code>bs_wizard_ptal_value_rel</code>), <strong>not</strong> a <code>related</code> field. A <code>related</code> field on a <code>TransientModel</code> is not populated in onchange virtual records, causing "No results to show" in the dropdown. The extension overrides <code>_build_attr_line_defaults</code> to explicitly include <code>ptal_value_ids</code> when building initial attr line commands, and patches <code>default_get</code> to backfill any commands arriving without it.</p>
-    </div>
+
+  <h3>12.5 Rule Conflict Behaviour</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Scenario</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Two rules both set the same attribute</td><td>First-rule-wins (lower sequence number)</td></tr>
+        <tr><td>Two rules both exclude values on the same attribute</td><td>Both exclusions apply (accumulated via <code>.discard()</code>)</td></tr>
+        <tr><td>Rule A excludes V, Rule B auto-fills V (both active)</td><td><strong>Exclusion wins</strong> — V is auto-filled then immediately cleared by the value filter</td></tr>
+        <tr><td>Rule A whitelist + Rule B exclusion on same attribute</td><td>Exclusion removes V from the whitelist set</td></tr>
+      </tbody>
+    </table>
   </div>
 
-  <h3>12.5 Installation</h3>
+  <h3>12.6 Installation</h3>
   <div class="code-block">
     <div class="code-header"><span class="code-lang"><span>BASH</span>Install</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-    <pre><code class="language-bash">venv/bin/python odoo-bin -d dv_kc --config=/home/server/odoo/odoo.conf \
-    -u bs_dynamic_bom_sale -i bs_attr_conditional_rule --stop-after-init</code></pre>
+    <pre><code class="language-bash"># Install alongside bs_dynamic_bom_sale (must upgrade parent at the same time)
+venv/bin/python odoo-bin -d dv_kc --config=/home/server/odoo/odoo.conf \
+    -u bs_dynamic_bom_sale -i bs_attr_conditional_rule --stop-after-init
+
+# Upgrade only (after code changes)
+venv/bin/python odoo-bin -d dv_kc --config=/home/server/odoo/odoo.conf \
+    -u bs_attr_conditional_rule --stop-after-init</code></pre>
   </div>
   <div class="callout gotcha">
     <div class="callout-icon">▲</div>
     <div class="callout-body">
-      <div class="callout-title">Use -u + -i together</div>
-      <p>Use <code>-u bs_dynamic_bom_sale -i bs_attr_conditional_rule</code> together. Using <code>-i</code> alone forces all installed modules into <code>_init_modules</code>, triggering combined-arch validation on <code>hdc_product_configurator</code>'s broken views. The parent upgrade is required to avoid the cycle.</p>
+      <div class="callout-title">Use -u + -i together on first install</div>
+      <p>Using <code>-i</code> alone triggers combined-arch validation on <code>hdc_product_configurator</code>'s broken views. The <code>product_template_views.xml</code> in this module deactivates those broken views, but only after the parent upgrade has run. The parent upgrade is required to avoid the cycle.</p>
     </div>
   </div>
 
-  <h3>12.6 Module File Structure</h3>
+  <h3>12.7 Module File Structure</h3>
   <div class="file-tree">
 <span class="dir">bs_attr_conditional_rule/</span>
-├── __manifest__.py
+├── __manifest__.py                    <span class="comment"># version 14.0.1.2.0</span>
 ├── __init__.py
 ├── <span class="dir">models/</span>
 │   ├── __init__.py
-│   ├── bs_product_attr_rule.py    <span class="comment"># BsProductAttrRule + BsProductAttrRuleFilter</span>
-│   ├── product_template.py        <span class="comment"># bs_attr_rule_ids One2many on product.template</span>
-│   └── bs_sale_config_ext.py      <span class="comment"># Extends wizard attr line + wizard onchange</span>
+│   ├── bs_product_attr_rule.py        <span class="comment"># BsProductAttrRule + BsProductAttrRuleFilter</span>
+│   │                                  <span class="comment"># + computed domain helpers (tmpl_pav_ids,</span>
+│   │                                  <span class="comment">#   trigger_ptal_pav_ids, target_ptal_pav_ids)</span>
+│   ├── product_attribute_value.py     <span class="comment"># _name_search override: also matches attribute_id.name</span>
+│   ├── product_template.py            <span class="comment"># bs_attr_rule_ids One2many on product.template</span>
+│   └── bs_sale_config_ext.py          <span class="comment"># Extends wizard attr line (effective_value_ids)</span>
+│                                      <span class="comment">#   + wizard onchange rule engine</span>
 ├── <span class="dir">views/</span>
-│   ├── product_template_views.xml           <span class="comment"># "Attribute Rules" tab; deactivates broken HDC views</span>
-│   └── bs_sale_config_wizard_views.xml      <span class="comment"># Patches value_id domain in wizard tree</span>
+│   ├── product_template_views.xml     <span class="comment"># "Attribute Rules" tab; deactivates broken HDC views</span>
+│   │                                  <span class="comment">#   domains use [('id', 'in', computed_field)]</span>
+│   └── bs_sale_config_wizard_views.xml  <span class="comment"># Patches value_id domain → effective_value_ids</span>
 └── <span class="dir">security/</span>
-    └── ir.model.access.csv                  <span class="comment"># group_sale_salesman: full CRUD on both models</span>
+    └── ir.model.access.csv            <span class="comment"># group_sale_salesman: full CRUD on both models</span>
   </div>
+
+  <h3>12.8 Implementation Notes</h3>
+  <h4>Why <code>effective_value_ids</code> instead of a <code>value_domain</code> Char</h4>
+  <p>Odoo 14's <code>py.js</code> evaluates <code>domain="char_field_name"</code> by identifier lookup → <code>.toJSON()</code> → <strong>primitive JS string</strong>. <code>eval_domains</code> in <code>py_utils.js</code> calls <code>result_domain.push.apply(result_domain, domain_array)</code> which requires an Object (array), not a primitive. This throws <code>TypeError: CreateListFromArrayLike called on non-object</code> every time the value dropdown is opened.</p>
+  <p>A M2M field with <code>domain="[('id', 'in', m2m_field)]"</code> evaluates as a list expression → <code>.toJSON()</code> → native JS Array (IS an Object) → no crash.</p>
+
+  <h4>Why <code>(1, id, vals)</code> instead of <code>(5,) + (0, 0, vals)</code></h4>
+  <p>Delete-all + recreate (<code>(5,)</code>) assigns new virtual record IDs. An async <code>_selectRow</code> callback fires after the rebuild with the old ID; <code>_getRecord(oldId)</code> returns <code>undefined</code>; <code>undefined.id</code> throws <code>TypeError: Cannot read properties of undefined (reading 'id')</code> at line 2665 of the minified <code>web.assets_backend.js</code>. This manifests specifically when selecting an attribute value that has a custom-value option.</p>
+  <p>Update-in-place (<code>(1, id, vals)</code>) preserves the virtual IDs so all pending async callbacks still resolve.</p>
+
+  <h4>Why <code>_name_search</code> is overridden on <code>product.attribute.value</code></h4>
+  <p>The default <code>_name_search</code> searches by the <code>name</code> field (value name) only. So searching "ข้อต่อ" would match values named "ข้อต่อตรง 180" but not values named "ไม่เอา" that belong to the "ข้อต่อ" attribute. The override adds <code>attribute_id.name</code> to the OR condition, so searching "ข้อต่อ" returns all values of the "ข้อต่อ" attribute regardless of their value name. The domain (<code>attribute_line_ids.value_ids</code>) still prevents values from unrelated products from appearing.</p>
 </section>
 
 <!-- ═══ §13 AI PROMPT GUIDE ═══ -->
