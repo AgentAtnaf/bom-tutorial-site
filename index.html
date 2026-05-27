@@ -1409,6 +1409,7 @@ qty=3.0    เรทจับกลาง 3 ตัว</code></pre>
         <tr><td>1.7.7</td><td>Block SO confirmation if any BS BoM line is unconfigured; raises <code>UserError</code> listing product names before creating any MO</td></tr>
         <tr><td>1.7.8</td><td><code>product_description_variants</code> on MO set from rule's <code>product_name</code> (when it differs from the template name); variant creation is rule-only — wizard attr selections no longer auto-fill <code>product_attributes</code></td></tr>
         <tr><td>1.8.0</td><td><code>_bs_find_or_create_variant</code> is now strictly lookup-only: attributes and values must be pre-defined on the product template; missing attribute → <code>RedirectWarning</code> with redirect to attribute list/form; wrong <code>create_variant</code> mode → <code>RedirectWarning</code> to fix it manually; missing value → <code>UserError</code> with available values listed</td></tr>
+        <tr><td>1.8.1</td><td>Variant identity is wizard-only: <code>action_apply</code> builds <code>product_attrs</code> from <code>attr_line_ids</code> (not rule output); <code>_bs_refresh_config</code> builds <code>product_attrs</code> from <code>bs_config_json</code> filtered by template PTAL attr names; rules that return <code>product_attributes</code> raise <code>UserError</code>; gear button hidden after SO confirmation (<code>state not in draft/sent</code>)</td></tr>
       </tbody>
     </table>
   </div>
