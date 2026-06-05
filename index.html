@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BS Dynamic BoM — Sale Configurator v1.7.3</title>
+<title>BS Dynamic BoM — Sale Configurator v14.0.1.13.0</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Playfair+Display:ital,wght@0,700;0,800;1,700;1,800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/base16/material-darker.min.css">
@@ -257,7 +257,7 @@ tbody td:first-child{font-family:'JetBrains Mono',monospace;font-size:.77rem;col
     <div class="side-title">Dynamic BoM<br>Sale Configurator</div>
     <div class="side-sub">Developer &amp; User Tutorial</div>
     <div class="side-badges">
-      <span class="badge badge-coral">v14.0.1.7.8</span>
+      <span class="badge badge-coral">v14.0.1.13.0</span>
       <span class="badge badge-warm">Developer</span>
     </div>
   </div>
@@ -291,7 +291,7 @@ tbody td:first-child{font-family:'JetBrains Mono',monospace;font-size:.77rem;col
   <p class="hero-desc">Python rules on BoM lines compute components from wizard inputs. Variant and Manufacturing Order are created only at SO confirmation — zero pre-created combinatorial variants.</p>
   <div class="hero-meta">
     <div class="hero-meta-item"><div class="hero-meta-label">Module</div><div class="hero-meta-val">bs_dynamic_bom_sale</div></div>
-    <div class="hero-meta-item"><div class="hero-meta-label">Version</div><div class="hero-meta-val">14.0.1.7.8</div></div>
+    <div class="hero-meta-item"><div class="hero-meta-label">Version</div><div class="hero-meta-val">14.0.1.13.0</div></div>
     <div class="hero-meta-item"><div class="hero-meta-label">Platform</div><div class="hero-meta-val">Odoo 14</div></div>
     <div class="hero-meta-item"><div class="hero-meta-label">Depends</div><div class="hero-meta-val">bs_dynamic_bom_rule · sale_management · mrp</div></div>
   </div>
@@ -337,7 +337,7 @@ tbody td:first-child{font-family:'JetBrains Mono',monospace;font-size:.77rem;col
   <div class="callout tip">
     <div class="callout-icon">✓</div>
     <div class="callout-body">
-      <div class="callout-title">Companion Module — bs_attr_conditional_rule v14.0.1.2.0</div>
+      <div class="callout-title">Companion Module — bs_attr_conditional_rule v14.0.1.7.0</div>
       <p>Adds conditional attribute rules to the wizard: auto-fill, value filtering, and blacklisting based on trigger attribute values. See <strong>§12</strong> for full documentation.</p>
     </div>
   </div>
@@ -663,7 +663,7 @@ component = pav.component_id  # product.product record</code></pre>
     <table>
       <thead><tr><th>Variable</th><th>Type</th><th>Description</th></tr></thead>
       <tbody>
-        <tr><td>values</td><td>dict</td><td>All wizard inputs: <code>width</code> (float), <code>height</code> (float), <code>uom</code> (str), + attribute selections — single-pick → <code>str</code> value name; multi-pick → <code>list[str]</code> of names</td></tr>
+        <tr><td>values</td><td>dict</td><td>All wizard inputs: <code>width</code> (float), <code>height</code> (float), <code>uom</code> (str), + all attribute value names keyed by attribute name (each value is a <code>str</code>)</td></tr>
         <tr><td>line</td><td>mrp.bom.line</td><td>Current BoM line — <code>line.product_id</code>, <code>line.product_uom_id</code></td></tr>
         <tr><td>bom</td><td>mrp.bom</td><td>Parent BoM — <strong>use <code>bom.env</code> for ORM access</strong></td></tr>
         <tr><td>product / base_product</td><td>product.template</td><td>Base product template</td></tr>
@@ -1012,11 +1012,12 @@ if my_product_id not in already_ids:
   <div class="callout note">
     <div class="callout-icon">⚡</div>
     <div class="callout-body">
-      <div class="callout-title">Four Cases</div>
+      <div class="callout-title">Five Cases</div>
       <p><strong>Case 1</strong> — Direct lookup: <code>values[attr]</code> → PAV → <code>component_id</code>.<br>
       <strong>Case 2</strong> — Qty by attribute name (dimensional logic per attr).<br>
       <strong>Case 3</strong> — Custom value: <code>is_custom = True</code> PAV fallback — user typed a free text value.<br>
-      <strong>Case 4</strong> — <code>bom.rate</code> table lookup (after the attr loop, unconditional).</p>
+      <strong>Case 4</strong> — <code>bom.rate</code> table lookup (after the attr loop, unconditional).<br>
+      <strong>Case 5</strong> — Related-product walk: iterate <code>multi.combo.option</code> width-tiered tables on PAVs (5a = first match; 5b = all matches).</p>
     </div>
   </div>
 
@@ -1121,7 +1122,53 @@ if rate:
         'default_code': 'C19-R38RX-002W',   # จับกลาง — self-documenting for Test Rule check
         'name':         rate.name,
         'qty':          rate.qty,
-    })</code></pre>
+    })
+
+# Case 5a — related-product walk via multi.combo.option (first match only)
+# Each PAV can have a related_product_id → multi.combo.option with width-tiered child rows.
+# 5a: use the first (lowest width) product row where opt.width >= blind width.
+attr_names = base_product.attribute_line_ids.mapped('attribute_id.name')
+for attr_name in attr_names:
+    val_name = values.get(attr_name)
+    if not val_name or not isinstance(val_name, str):
+        continue
+    pav = PAV.search([
+        ('attribute_id.name', '=', attr_name),
+        ('name',              '=', val_name),
+    ], limit=1)
+    if not pav or not pav.related_product_id:
+        continue
+    for opt in pav.related_product_id.option_product_ids.sorted('width'):
+        if opt.width >= w_m:
+            result.append({
+                'product_id': opt.product_id.id,
+                'name':       opt.product_id.display_name,
+                'qty':        opt.qty,
+                'uom_id':     opt.uom_id.id or opt.product_id.uom_id.id,
+            })
+            break  # 5a: first match only; remove break for 5b (all matches)</code></pre>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>multi.combo.option field</th><th>Type</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td>name</td><td>Char</td><td>Label (e.g. "306Bamboo")</td></tr>
+        <tr><td>option_product_ids</td><td>One2many</td><td>Child rows with products + width thresholds</td></tr>
+        <tr><td>option_product_ids.width</td><td>Float</td><td>Width threshold (m) — use if blind width ≥ this value</td></tr>
+        <tr><td>option_product_ids.product_id</td><td>Many2one product.product</td><td>Component product to add</td></tr>
+        <tr><td>option_product_ids.qty</td><td>Float</td><td>Qty per unit</td></tr>
+        <tr><td>option_product_ids.uom_id</td><td>Many2one uom.uom</td><td>UoM (defaults to product's UoM if missing)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="callout tip">
+    <div class="callout-icon">✓</div>
+    <div class="callout-body">
+      <div class="callout-title">5a vs 5b</div>
+      <p><strong>5a (first match)</strong> — <code>break</code> after the first <code>opt.width ≥ w_m</code> hit. Use when only the lowest tier that covers the blind width should be added.<br>
+      <strong>5b (all matches)</strong> — remove the <code>break</code>. Use when every product whose width tier is ≤ the blind width should be emitted (cumulative stacking).</p>
+    </div>
   </div>
 
   <h4>is_custom PAVs for รุ่นโซ่ดึง 38 มิล</h4>
@@ -1155,7 +1202,7 @@ test_values = {
     'สีรางบน':   'ขาว',
 }
 
-result, pname, pattrs, log = evaluator.evaluate(
+result, pname, pattrs, dcode, log = evaluator.evaluate(
     rule=line.python_rule,
     product=base, base_product=base,
     bom=bom, line=line,
@@ -1423,7 +1470,8 @@ qty=3.0    เรทจับกลาง 3 ตัว</code></pre>
         <tr><td>1.7.8</td><td><code>product_description_variants</code> on MO set from rule's <code>product_name</code> (when it differs from the template name); variant creation is rule-only — wizard attr selections no longer auto-fill <code>product_attributes</code></td></tr>
         <tr><td>1.8.0</td><td><code>_bs_find_or_create_variant</code> is now strictly lookup-only: attributes and values must be pre-defined on the product template; missing attribute → <code>RedirectWarning</code> with redirect to attribute list/form; wrong <code>create_variant</code> mode → <code>RedirectWarning</code> to fix it manually; missing value → <code>UserError</code> with available values listed</td></tr>
         <tr><td>1.8.1</td><td>Variant identity is wizard-only: <code>action_apply</code> builds <code>product_attrs</code> from <code>attr_line_ids</code> (not rule output); <code>_bs_refresh_config</code> builds <code>product_attrs</code> from <code>bs_config_json</code> filtered by template PTAL attr names; rules that return <code>product_attributes</code> raise <code>UserError</code>; gear button hidden after SO confirmation (<code>state not in draft/sent</code>)</td></tr>
-        <tr><td>1.12.1</td><td><strong>Multi-value attribute selection</strong>: <code>value_ids</code> M2M on wizard attr line (was single M2O); single pick → variant identity + string in <code>values</code>; multi-pick → excluded from variant identity, passed as sorted list; <strong><code>default_code</code></strong> rule output stamps internal reference on new variant; <strong><code>product_categ_id</code></strong> filter on wizard header; <strong><code>custom_values</code></strong> JSON field for extra rule inputs; <strong>component SO lines</strong> (<code>bs_is_component_line</code>, <code>bs_parent_line_id</code>) inserted at confirmation; <strong><code>action_bs_refresh_configured_lines</code></strong> on SO; <code>_bs_find_or_create_variant</code> accepts <code>always</code> mode — only <code>no_variant</code> is blocked; <code>_bs_refresh_config</code> called automatically before variant/MO creation at confirm</td></tr>
+        <tr><td>1.12.1</td><td><strong><code>default_code</code></strong> rule output (5th evaluator return) stamps internal reference on newly-created variant; <strong><code>product_categ_id</code></strong> Many2one filter on wizard header; <strong><code>custom_values</code></strong> Text/JSON field merges extra inputs into <code>values</code>; <strong>component SO lines</strong> (<code>bs_is_component_line</code>, <code>bs_parent_line_id</code>) inserted at confirmation; <strong><code>action_bs_refresh_configured_lines</code></strong> on <code>sale.order</code>; <code>_bs_find_or_create_variant</code> accepts <code>always</code> mode — only <code>no_variant</code> is blocked; <code>_bs_refresh_config</code> called automatically before variant/MO creation at confirm</td></tr>
+        <tr><td>1.13.0</td><td><strong>Case 5</strong> added to Master Rule (§5.11): related-product walk via <code>multi.combo.option</code> — iterate width-tiered PAV tables to find component products; <strong>5a</strong> (first match) emits the lowest-width product that covers blind width; <strong>5b</strong> (all matches) emits every product in the table where width threshold ≤ blind width</td></tr>
       </tbody>
     </table>
   </div>
@@ -1432,7 +1480,7 @@ qty=3.0    เรทจับกลาง 3 ตัว</code></pre>
 <!-- ═══ §12 COMPANION MODULE ═══ -->
 <section class="section" id="s12">
   <div class="section-tag">§ 12</div>
-  <h2>Companion Module — <code>bs_attr_conditional_rule</code> <small style="font-size:.7em;font-weight:400;color:var(--text-muted)">v14.0.1.2.0</small></h2>
+  <h2>Companion Module — <code>bs_attr_conditional_rule</code> <small style="font-size:.7em;font-weight:400;color:var(--text-muted)">v14.0.1.7.0</small></h2>
   <p class="section-lead">Adds a UI tab on the product template to define conditional attribute rules. When a specific attribute value is selected in the BS wizard, rules automatically <strong>fill in</strong> other attribute values, <strong>filter</strong> available options, and/or <strong>exclude</strong> specific values. All effects reset when the trigger value is deselected.</p>
 
   <h3>12.1 How It Works</h3>
@@ -1582,7 +1630,7 @@ venv/bin/python odoo-bin -d dv_kc --config=/home/server/odoo/odoo.conf \
   <h3>12.7 Module File Structure</h3>
   <div class="file-tree">
 <span class="dir">bs_attr_conditional_rule/</span>
-├── __manifest__.py                    <span class="comment"># version 14.0.1.2.0</span>
+├── __manifest__.py                    <span class="comment"># version 14.0.1.7.0</span>
 ├── __init__.py
 ├── <span class="dir">models/</span>
 │   ├── __init__.py
@@ -1624,15 +1672,14 @@ venv/bin/python odoo-bin -d dv_kc --config=/home/server/odoo/odoo.conf \
   <div class="prompt-box">
     <div class="prompt-box-label">Paste into Claude / ChatGPT before your request</div>
     <div class="code-block" style="margin:0">
-      <div class="code-header"><span class="code-lang"><span>TEXT</span>AI Context Block v1.7.3</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-      <pre><code class="language-plaintext">You are writing Python rules for BS Dynamic BoM Sale Configurator (Odoo 14 v14.0.1.7.8).
+      <div class="code-header"><span class="code-lang"><span>TEXT</span>AI Context Block v1.13.0</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code class="language-plaintext">You are writing Python rules for BS Dynamic BoM Sale Configurator (Odoo 14 v14.0.1.13.0).
 Rules run inside exec() with a sandboxed locals dict. No imports allowed.
 
 ═══ INJECTED VARIABLES ═══
 values   dict          — wizard inputs; always use .get('key', default)
                          keys: 'width'(float METRES), 'height'(float METRES), 'uom'('m'),
-                               single-pick attr → str value name
-                               multi-pick attr  → list[str] sorted names (excluded from variant identity)
+                               attr_name → str value name (one value per attribute)
 line     mrp.bom.line  — line.product_id, line.product_uom_id
 bom      mrp.bom       — USE bom.env['model'] for ORM access (not bare env)
 product / base_product  product.template
@@ -1647,13 +1694,14 @@ product_name        str   — SO line display name + MO product_description_vari
 default_code        str   — internal reference stamped on a NEWLY-created variant (existing variants untouched)
 product_attributes  FORBIDDEN since v1.8.1 — raises UserError if assigned; variant identity is wizard-only
 
-═══ KEY PATTERNS (v1.8.1) ═══
-1. Master Rule (§5.11) — RECOMMENDED: single BoM line, 4 cases
+═══ KEY PATTERNS (v1.13.0) ═══
+1. Master Rule (§5.11) — RECOMMENDED: single BoM line, 5 cases
    width/height in METRES. Convert: w_cm = w_m * 100.0
    Case 1: PAV search by attr_name+val_name → pav.component_id
    Case 2: qty by attr_name (hardcoded per attribute)
    Case 3: is_custom PAV fallback — user typed free text
    Case 4: bom.rate table lookup after attr loop
+   Case 5: related-product walk via multi.combo.option width-tiered tables (5a=first match, 5b=all)
 
 2. Line 10 — Formula Dispatcher (attr_name-based, for split-line BoMs)
 3. Line 20 — Role-Based Dispatcher — ROLE_ATTRS={'รางล่าง','รางข้าง','ขายื่น'}
@@ -1674,26 +1722,27 @@ NOT: import open eval exec os sys</code></pre>
   <h3>System Prompt for Claude Projects / GPT Custom Instructions</h3>
   <div class="code-block">
     <div class="code-header"><span class="code-lang"><span>TEXT</span>System Prompt</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-    <pre><code class="language-plaintext">You are an expert at writing Python rules for BS Dynamic BoM Sale Configurator (Odoo 14 v14.0.1.8.1).
+    <pre><code class="language-plaintext">You are an expert at writing Python rules for BS Dynamic BoM Sale Configurator (Odoo 14 v14.0.1.13.0).
 
 Rules run in exec() with sandboxed locals. No imports. Key variables:
-  values       — wizard inputs (width/height in METRES, uom='m', + attr_name: value_name)
+  values       — wizard inputs (width/height in METRES, uom='m', + attr_name: str value_name)
   bom.env      — ORM access (bom.env['product.attribute.value'].search([...]))
   prev_result  — previous line output ([] for line 1)
   result       — assign this: [{'product_id':int,'name':str,'qty':float}]
   product_name — optional str, sets SO line display name + MO product_description_variants
+  default_code — optional str, stamps internal reference on a NEWLY-created variant
 
 IMPORTANT v1.8.1: DO NOT assign product_attributes — it raises UserError. Variant identity
 is now wizard-only (built from the wizard's attr_line_ids, not from rule output).
-v1.12.1: multi-pick values arrive as list[str]; default_code str stamps new variant's SKU.
 
-v1.8.1 Master Rule (§5.11) — recommended pattern:
+v1.13.0 Master Rule (§5.11) — recommended pattern, 5 cases:
   w_m = values.get('width', 0.0)   # metres
   w_cm = w_m * 100.0               # cm for stock-length formulas
   Case 1: PAV.search by attr_name + val_name → pav.component_id
   Case 2: qty by attr_name (hardcoded per attribute)
   Case 3: is_custom PAV fallback if Case 1 finds nothing
   Case 4: bom.rate lookup after attr loop (unconditional)
+  Case 5: related-product walk via multi.combo.option (5a=first match, 5b=all matches)
 
 Rules:
 1. Always values.get('key', default)
@@ -1707,7 +1756,7 @@ Rules:
 
 <footer class="site-footer">
   <div class="footer-brand">Dynamic BoM Sale Configurator</div>
-  <div class="footer-meta">bs_dynamic_bom_sale · v14.0.1.7.8 · Basic Solution Co., Ltd.</div>
+  <div class="footer-meta">bs_dynamic_bom_sale · v14.0.1.13.0 · Basic Solution Co., Ltd.</div>
 </footer>
 </main>
 
