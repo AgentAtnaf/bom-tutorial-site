@@ -505,7 +505,7 @@ tbody td:first-child{font-family:'JetBrains Mono',monospace;font-size:.77rem;col
 
   <h3>2.2 Variants Tab — Attributes</h3>
   <p>Add the attributes that your BoM rules will reference. All attributes <strong>must be pre-defined here</strong> — neither the wizard nor BoM Python rules are allowed to create attributes or attribute values automatically.</p>
-  <p>Each attribute must have <code>Variants</code> set to <strong>Dynamic</strong> so Odoo does not pre-create every possible combination and so PTAVs participate in the variant combination key used by <code>_bs_find_or_create_variant</code>.</p>
+  <p>Each attribute must <strong>not</strong> be set to <strong>Never (no variant)</strong>. Both <em>Dynamic</em> and <em>Instantly</em> modes work — <code>_bs_find_or_create_variant</code> looks up the existing PTAV combination regardless of how Odoo created it. Only <code>no_variant</code> is rejected because it cannot participate in a variant combination key.</p>
   <div class="callout gotcha">
     <div class="callout-icon">▲</div>
     <div class="callout-body">
@@ -516,7 +516,7 @@ tbody td:first-child{font-family:'JetBrains Mono',monospace;font-size:.77rem;col
           <thead><tr><th>Situation</th><th>Error type</th><th>Action button</th></tr></thead>
           <tbody>
             <tr><td>Attribute name not found</td><td><code>RedirectWarning</code></td><td>"Go to Attributes" → opens attribute list</td></tr>
-            <tr><td>Attribute found, <code>Variants ≠ Dynamic</code></td><td><code>RedirectWarning</code></td><td>"Open Attribute" → opens that attribute's form</td></tr>
+            <tr><td>Attribute found, <code>Variants = Never (no_variant)</code></td><td><code>RedirectWarning</code></td><td>"Open Attribute" → opens that attribute's form</td></tr>
             <tr><td>Attribute value not on this template</td><td><code>UserError</code></td><td>Lists available values for that attribute</td></tr>
           </tbody>
         </table>
@@ -663,13 +663,14 @@ component = pav.component_id  # product.product record</code></pre>
     <table>
       <thead><tr><th>Variable</th><th>Type</th><th>Description</th></tr></thead>
       <tbody>
-        <tr><td>values</td><td>dict</td><td>All wizard inputs: <code>width</code> (float), <code>height</code> (float), <code>uom</code> (str), + all attribute value names keyed by attribute name</td></tr>
+        <tr><td>values</td><td>dict</td><td>All wizard inputs: <code>width</code> (float), <code>height</code> (float), <code>uom</code> (str), + attribute selections — single-pick → <code>str</code> value name; multi-pick → <code>list[str]</code> of names</td></tr>
         <tr><td>line</td><td>mrp.bom.line</td><td>Current BoM line — <code>line.product_id</code>, <code>line.product_uom_id</code></td></tr>
         <tr><td>bom</td><td>mrp.bom</td><td>Parent BoM — <strong>use <code>bom.env</code> for ORM access</strong></td></tr>
         <tr><td>product / base_product</td><td>product.template</td><td>Base product template</td></tr>
         <tr><td>prev_result</td><td>list[dict]</td><td>Output of the previous BoM line (empty for line 1)</td></tr>
         <tr><td>result</td><td>list[dict]</td><td><span class="tag-pill tag-coral">Assign this</span></td></tr>
-        <tr><td>product_name</td><td>str</td><td><span class="tag-pill tag-warm">Optional</span> — overrides SO line display name</td></tr>
+        <tr><td>product_name</td><td>str</td><td><span class="tag-pill tag-warm">Optional</span> — overrides SO line display name + sets <code>product_description_variants</code> on MO</td></tr>
+        <tr><td>default_code</td><td>str</td><td><span class="tag-pill tag-warm">Optional</span> — sets <code>default_code</code> on a <strong>newly-created</strong> variant; existing variants are never modified</td></tr>
         <tr><td>product_attributes</td><td>dict</td><td><span class="tag-pill" style="background:var(--red-bg);color:var(--red);border:1px solid var(--red-border)">Removed v1.8.1</span> — raises <code>UserError</code> if set; variant identity is now wizard-only</td></tr>
       </tbody>
     </table>
@@ -1189,7 +1190,7 @@ qty=3.0    เรทจับกลาง 3 ตัว</code></pre>
 <section class="section" id="s06">
   <div class="section-tag">§ 06</div>
   <h2>Wizard — Category-Specific Parameter Sections</h2>
-  <p class="section-lead">The wizard checks the product's <code>categ_id.complete_name</code> to set <code>bs_categ_group</code>, which controls which dimension section is shown.</p>
+  <p class="section-lead">The wizard checks <code>product_categ_id</code> (or the product's own category) to set <code>bs_categ_group</code>, which controls which dimension section is shown. The user can pre-filter the product selector by category before choosing a product.</p>
 
   <div class="table-wrap">
     <table>
@@ -1209,7 +1210,12 @@ qty=3.0    เรทจับกลาง 3 ตัว</code></pre>
   </div>
 
   <h3>6.1 Attribute Values Section</h3>
-  <p>All attributes from the product template are shown dynamically in the <strong>Attribute Values</strong> group. The user selects one value per attribute. The selected value name is packed into <code>values[attribute_name] = value_name</code>.</p>
+  <p>All attributes from the product template are shown dynamically in the <strong>Attribute Values</strong> group. Each attribute uses a <code>many2many_tags</code> widget — the user can select <strong>one or multiple values</strong> per attribute.</p>
+  <ul style="font-size:.91rem;color:var(--text-mid);margin-bottom:12px">
+    <li><strong>Single pick</strong> → <code>values[attr_name] = 'value_name'</code> (string) — participates in variant identity</li>
+    <li><strong>Multi-pick</strong> → <code>values[attr_name] = ['val1', 'val2', …]</code> (sorted list) — passed to rules but <strong>excluded</strong> from variant identity (no synthetic multi-variant is created)</li>
+  </ul>
+  <p>A separate <strong>Extra Options (JSON)</strong> textarea (<code>custom_values</code> field, hidden when a recognised category is selected) accepts arbitrary key-value pairs that are merged into <code>values</code> before rules run.</p>
   <p>Standard dimensions always present in <code>values</code>:</p>
   <div class="table-wrap">
     <table>
@@ -1269,6 +1275,9 @@ qty=3.0    เรทจับกลาง 3 ตัว</code></pre>
   </div>
   <p><strong>MO Smart Button:</strong> A stat button with a factory icon (🏭) appears on the SO form header whenever <code>bs_mo_count &gt; 0</code>. Clicking it opens a filtered list of all Manufacturing Orders created from this SO's BS lines.</p>
   <p><strong>Confirm-block:</strong> <code>action_confirm</code> raises a <code>UserError</code> before processing if any SO line has a BS BoM product that was not put through the wizard (<code>bs_is_configured = False</code>). The error message lists each unconfigured product by name.</p>
+  <p><strong>Refresh action:</strong> <code>action_bs_refresh_configured_lines</code> re-runs BoM Python rules for all configured-but-not-yet-confirmed lines (useful after updating rule code to see the new component log without re-opening the wizard).</p>
+  <p><code>bs_has_configured_lines</code> (Boolean computed) — True when any <code>order_line.bs_is_configured</code>. Used to show/hide the BoM tab and Refresh button in the SO form.</p>
+  <p><code>bs_configured_line_ids</code> — filtered One2many showing only <code>bs_is_configured=True</code> lines; used in the "BoM for Sales Order" tab.</p>
 
   <h3>Key Fields on <code>sale.order.line</code></h3>
   <div class="table-wrap">
@@ -1283,6 +1292,8 @@ qty=3.0    เรทจับกลาง 3 ตัว</code></pre>
         <tr><td>bs_config_name</td><td>Char</td><td>Display name from <code>product_name</code> rule</td></tr>
         <tr><td>bs_config_state</td><td>Selection</td><td><code>draft</code> → <code>configured</code> → <code>confirmed</code></td></tr>
         <tr><td>bs_mo_ids</td><td>Many2many mrp.production</td><td>All MOs created for this line (one per unit via <code>produce_qty</code> loop)</td></tr>
+        <tr><td>bs_is_component_line</td><td>Boolean</td><td>True for auto-inserted component SO lines created at confirmation (price = 0)</td></tr>
+        <tr><td>bs_parent_line_id</td><td>Many2one sale.order.line</td><td>Points back to the configured parent line for component lines</td></tr>
       </tbody>
     </table>
   </div>
@@ -1319,8 +1330,8 @@ qty=3.0    เรทจับกลาง 3 ตัว</code></pre>
   <h3>"Attribute 'X' is not defined"</h3>
   <div class="callout gotcha"><div class="callout-icon">▲</div><div class="callout-body"><div class="callout-title">Attribute name not in product.attribute at all</div><p><strong>Cause:</strong> A wizard attribute selection references an attribute name that does not exist in <code>product.attribute</code>. Raises a <code>RedirectWarning</code> with a "Go to Attributes" button that opens the attribute list directly.<br><strong>Fix:</strong> Create the attribute in Configuration → Attributes and add it to the product template's Variants tab with <code>Variants = Dynamic</code>.</p></div></div>
 
-  <h3>"Attribute 'X' is set to '…' variant mode"</h3>
-  <div class="callout gotcha"><div class="callout-icon">▲</div><div class="callout-body"><div class="callout-title">Attribute exists but Variants ≠ Dynamic</div><p><strong>Cause:</strong> The attribute exists but its <code>Variants</code> field is not <code>Dynamic</code> (<code>no_variant</code> or <code>always</code>). Raises a <code>RedirectWarning</code> with an "Open Attribute" button.<br><strong>Fix:</strong> Open the attribute form and change <code>Variants</code> to <code>Dynamic</code>.</p></div></div>
+  <h3>"Attribute 'X' is set to 'Never (no variant)' mode"</h3>
+  <div class="callout gotcha"><div class="callout-icon">▲</div><div class="callout-body"><div class="callout-title">Attribute set to no_variant mode</div><p><strong>Cause:</strong> The attribute's <code>Variants</code> field is <code>Never (no_variant)</code>. It cannot participate in a variant combination key. <em>Dynamic</em> and <em>Instantly</em> (<code>always</code>) are both accepted. Raises a <code>RedirectWarning</code> with an "Open Attribute" button.<br><strong>Fix:</strong> Change <code>Variants</code> to <em>Dynamic</em> or <em>Instantly</em>.</p></div></div>
 
   <h3>"Attribute value X is not configured on product Y"</h3>
   <div class="callout gotcha"><div class="callout-icon">▲</div><div class="callout-body"><div class="callout-title">Value missing from template Variants tab</div><p><strong>Cause:</strong> The attribute is Dynamic but the specific value has no PTAV on this product template — never added or removed from the Variants tab. Raises a <code>UserError</code> listing all currently available values for that attribute.<br><strong>Fix:</strong> Add the missing value to the attribute line on the product template's Variants tab.</p></div></div>
@@ -1412,6 +1423,7 @@ qty=3.0    เรทจับกลาง 3 ตัว</code></pre>
         <tr><td>1.7.8</td><td><code>product_description_variants</code> on MO set from rule's <code>product_name</code> (when it differs from the template name); variant creation is rule-only — wizard attr selections no longer auto-fill <code>product_attributes</code></td></tr>
         <tr><td>1.8.0</td><td><code>_bs_find_or_create_variant</code> is now strictly lookup-only: attributes and values must be pre-defined on the product template; missing attribute → <code>RedirectWarning</code> with redirect to attribute list/form; wrong <code>create_variant</code> mode → <code>RedirectWarning</code> to fix it manually; missing value → <code>UserError</code> with available values listed</td></tr>
         <tr><td>1.8.1</td><td>Variant identity is wizard-only: <code>action_apply</code> builds <code>product_attrs</code> from <code>attr_line_ids</code> (not rule output); <code>_bs_refresh_config</code> builds <code>product_attrs</code> from <code>bs_config_json</code> filtered by template PTAL attr names; rules that return <code>product_attributes</code> raise <code>UserError</code>; gear button hidden after SO confirmation (<code>state not in draft/sent</code>)</td></tr>
+        <tr><td>1.12.1</td><td><strong>Multi-value attribute selection</strong>: <code>value_ids</code> M2M on wizard attr line (was single M2O); single pick → variant identity + string in <code>values</code>; multi-pick → excluded from variant identity, passed as sorted list; <strong><code>default_code</code></strong> rule output stamps internal reference on new variant; <strong><code>product_categ_id</code></strong> filter on wizard header; <strong><code>custom_values</code></strong> JSON field for extra rule inputs; <strong>component SO lines</strong> (<code>bs_is_component_line</code>, <code>bs_parent_line_id</code>) inserted at confirmation; <strong><code>action_bs_refresh_configured_lines</code></strong> on SO; <code>_bs_find_or_create_variant</code> accepts <code>always</code> mode — only <code>no_variant</code> is blocked; <code>_bs_refresh_config</code> called automatically before variant/MO creation at confirm</td></tr>
       </tbody>
     </table>
   </div>
@@ -1619,7 +1631,8 @@ Rules run inside exec() with a sandboxed locals dict. No imports allowed.
 ═══ INJECTED VARIABLES ═══
 values   dict          — wizard inputs; always use .get('key', default)
                          keys: 'width'(float METRES), 'height'(float METRES), 'uom'('m'),
-                               + attribute_name: value_name for each selected attribute
+                               single-pick attr → str value name
+                               multi-pick attr  → list[str] sorted names (excluded from variant identity)
 line     mrp.bom.line  — line.product_id, line.product_uom_id
 bom      mrp.bom       — USE bom.env['model'] for ORM access (not bare env)
 product / base_product  product.template
@@ -1631,6 +1644,7 @@ result = []  valid (conditional exclusion)
 
 ═══ OPTIONAL OUTPUT ═══
 product_name        str   — SO line display name + MO product_description_variants (use on last line)
+default_code        str   — internal reference stamped on a NEWLY-created variant (existing variants untouched)
 product_attributes  FORBIDDEN since v1.8.1 — raises UserError if assigned; variant identity is wizard-only
 
 ═══ KEY PATTERNS (v1.8.1) ═══
@@ -1671,6 +1685,7 @@ Rules run in exec() with sandboxed locals. No imports. Key variables:
 
 IMPORTANT v1.8.1: DO NOT assign product_attributes — it raises UserError. Variant identity
 is now wizard-only (built from the wizard's attr_line_ids, not from rule output).
+v1.12.1: multi-pick values arrive as list[str]; default_code str stamps new variant's SKU.
 
 v1.8.1 Master Rule (§5.11) — recommended pattern:
   w_m = values.get('width', 0.0)   # metres
