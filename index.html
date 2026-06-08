@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BS Dynamic BoM — Sale Configurator v14.0.1.13.0</title>
+<title>BS Dynamic BoM — Sale Configurator v14.0.1.18.1</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Playfair+Display:ital,wght@0,700;0,800;1,700;1,800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/base16/material-darker.min.css">
@@ -257,7 +257,7 @@ tbody td:first-child{font-family:'JetBrains Mono',monospace;font-size:.77rem;col
     <div class="side-title">Dynamic BoM<br>Sale Configurator</div>
     <div class="side-sub">Developer &amp; User Tutorial</div>
     <div class="side-badges">
-      <span class="badge badge-coral">v14.0.1.13.0</span>
+      <span class="badge badge-coral">v14.0.1.18.1</span>
       <span class="badge badge-warm">Developer</span>
     </div>
   </div>
@@ -276,7 +276,8 @@ tbody td:first-child{font-family:'JetBrains Mono',monospace;font-size:.77rem;col
     <a href="#s10"><span class="num">10</span>Testing Checklist</a>
     <a href="#s11"><span class="num">11</span>Version History</a>
     <a href="#s12"><span class="num">12</span>Companion Module</a>
-    <a href="#s13"><span class="num">13</span>AI Prompt Guide</a>
+    <a href="#s13"><span class="num">13</span>Sell as a Set</a>
+    <a href="#s14"><span class="num">14</span>AI Prompt Guide</a>
   </nav>
   <div class="side-footer">bs_dynamic_bom_sale<br>Basic Solution Co., Ltd.</div>
 </aside>
@@ -291,7 +292,7 @@ tbody td:first-child{font-family:'JetBrains Mono',monospace;font-size:.77rem;col
   <p class="hero-desc">Python rules on BoM lines compute components from wizard inputs. Variant and Manufacturing Order are created only at SO confirmation — zero pre-created combinatorial variants.</p>
   <div class="hero-meta">
     <div class="hero-meta-item"><div class="hero-meta-label">Module</div><div class="hero-meta-val">bs_dynamic_bom_sale</div></div>
-    <div class="hero-meta-item"><div class="hero-meta-label">Version</div><div class="hero-meta-val">14.0.1.13.0</div></div>
+    <div class="hero-meta-item"><div class="hero-meta-label">Version</div><div class="hero-meta-val">14.0.1.18.1</div></div>
     <div class="hero-meta-item"><div class="hero-meta-label">Platform</div><div class="hero-meta-val">Odoo 14</div></div>
     <div class="hero-meta-item"><div class="hero-meta-label">Depends</div><div class="hero-meta-val">bs_dynamic_bom_rule · sale_management · mrp</div></div>
   </div>
@@ -337,7 +338,7 @@ tbody td:first-child{font-family:'JetBrains Mono',monospace;font-size:.77rem;col
   <div class="callout tip">
     <div class="callout-icon">✓</div>
     <div class="callout-body">
-      <div class="callout-title">Companion Module — bs_attr_conditional_rule v14.0.1.7.0</div>
+      <div class="callout-title">Companion Module — bs_attr_conditional_rule v14.0.1.8.0</div>
       <p>Adds conditional attribute rules to the wizard: auto-fill, value filtering, and blacklisting based on trigger attribute values. See <strong>§12</strong> for full documentation.</p>
     </div>
   </div>
@@ -688,10 +689,20 @@ component = pav.component_id  # product.product record</code></pre>
     <div class="code-header"><span class="code-lang"><span>PYTHON</span>result item</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
     <pre><code class="language-python">{'product_id': 148590, 'name': 'กล่องบน 38มม. ขาว', 'qty': 2, 'uom_id': line.product_uom_id.id}
 
+# With optional description/note (v1.15.0+) — written to MO component Description column
+{'product_id': 148590, 'name': 'กล่องบน 38มม. ขาว', 'qty': 2, 'description': 'Cut at 45° miter'}
+
 # By internal reference (default_code)
 {'default_code': 'B02-S-5744-10YW', 'name': '...', 'qty': 1, 'uom_id': line.product_uom_id.id}
 
 result = []   # valid — this line produces no component</code></pre>
+  </div>
+  <div class="callout note">
+    <div class="callout-icon">ℹ</div>
+    <div class="callout-body">
+      <div class="callout-title">description / note (v1.15.0)</div>
+      <p>Any string set on <code>description</code> (or its alias <code>note</code>) is written to that component's <code>note</code> field on the Manufacturing Order — the <strong>Description</strong> column of the MO Components tab. It also appears as a <code>↳ &lt;text&gt;</code> sub-line under the component in both the wizard <strong>Preview</strong> and the <strong>BoM for Sales Order</strong> tab, so the sales user sees exactly what the production team will receive.</p>
+    </div>
   </div>
 
   <h3>5.3 UoM Rule — Critical</h3>
@@ -1472,6 +1483,13 @@ qty=3.0    เรทจับกลาง 3 ตัว</code></pre>
         <tr><td>1.8.1</td><td>Variant identity is wizard-only: <code>action_apply</code> builds <code>product_attrs</code> from <code>attr_line_ids</code> (not rule output); <code>_bs_refresh_config</code> builds <code>product_attrs</code> from <code>bs_config_json</code> filtered by template PTAL attr names; rules that return <code>product_attributes</code> raise <code>UserError</code>; gear button hidden after SO confirmation (<code>state not in draft/sent</code>)</td></tr>
         <tr><td>1.12.1</td><td><strong><code>default_code</code></strong> rule output (5th evaluator return) stamps internal reference on newly-created variant; <strong><code>product_categ_id</code></strong> Many2one filter on wizard header; <strong><code>custom_values</code></strong> Text/JSON field merges extra inputs into <code>values</code>; <strong>component SO lines</strong> (<code>bs_is_component_line</code>, <code>bs_parent_line_id</code>) inserted at confirmation; <strong><code>action_bs_refresh_configured_lines</code></strong> on <code>sale.order</code>; <code>_bs_find_or_create_variant</code> accepts <code>always</code> mode — only <code>no_variant</code> is blocked; <code>_bs_refresh_config</code> called automatically before variant/MO creation at confirm</td></tr>
         <tr><td>1.13.0</td><td><strong>Case 5</strong> added to Master Rule (§5.11): related-product walk via <code>multi.combo.option</code> — iterate width-tiered PAV tables to find component products; <strong>5a</strong> (first match) emits the lowest-width product that covers blind width; <strong>5b</strong> (all matches) emits every product in the table where width threshold ≤ blind width</td></tr>
+        <tr><td>1.14.0</td><td><strong>Notes for Production</strong>: <code>config_notes</code> text box on wizard → <code>bs_config_notes</code> on SO line → MO <code>internal_noted</code> at confirmation; shown on BoM for Sales Order tab; restored on reconfigure. See §13.1</td></tr>
+        <tr><td>1.15.0</td><td>Per-component <strong><code>description</code></strong> key in rule result dict (alias: <code>note</code>) → written to MO component <code>note</code> field (Description column on MO Components tab); shown as <code>↳ text</code> sub-line in wizard Preview and BoM for Sales tab. See §5.2</td></tr>
+        <tr><td>1.16.0–1.16.1</td><td><strong>Sell as a Set</strong>: <code>is_set</code> + <code>num_pieces</code> on wizard; multi-piece navigation (Previous / Next piece / Apply); one SO line per piece with <code>bs_set_name</code> (auto-sequence per SO) + <code>bs_piece_no</code>; written to MO <code>set_name</code>/<code>piece_no</code> at confirmation; Set/Piece columns on Order Lines and BoM for Sales tabs. See §13</td></tr>
+        <tr><td>1.17.0</td><td><strong>Available on piece</strong>: <code>bs_available_piece_ids</code> M2M on product template attribute lines (<code>bs.config.piece</code> tags <code>1</code>/<code>2</code>/<code>3</code>) restricts an attribute to specific pieces; empty = shown on every piece. See §13.3</td></tr>
+        <tr><td>1.17.1</td><td>Fix: set apply on an existing line wrote every piece to the same line — piece 1 now reuses the target line; pieces 2..N create new lines</td></tr>
+        <tr><td>1.18.0</td><td><strong>ID-based reconfigure</strong>: <code>bs_config_value_json</code> stores <code>{ptal_id: pav_id}</code>; reconfigure restores values by PTAL/PAV ID (rename-safe), falling back to name lookup for legacy lines. Rule input and variant identity remain name-based. See §13.4</td></tr>
+        <tr><td>1.18.1</td><td>Reconfigure of a set piece reopens with <code>Is a Set</code> ✓ and <code>Piece N/M</code> (read-only), edits only that piece (no multi-piece nav), and filters attributes to that piece; Companion v1.8.0 stops re-adding piece-hidden attributes (fixes reorder when toggling a set)</td></tr>
       </tbody>
     </table>
   </div>
@@ -1480,7 +1498,7 @@ qty=3.0    เรทจับกลาง 3 ตัว</code></pre>
 <!-- ═══ §12 COMPANION MODULE ═══ -->
 <section class="section" id="s12">
   <div class="section-tag">§ 12</div>
-  <h2>Companion Module — <code>bs_attr_conditional_rule</code> <small style="font-size:.7em;font-weight:400;color:var(--text-muted)">v14.0.1.7.0</small></h2>
+  <h2>Companion Module — <code>bs_attr_conditional_rule</code> <small style="font-size:.7em;font-weight:400;color:var(--text-muted)">v14.0.1.8.0</small></h2>
   <p class="section-lead">Adds a UI tab on the product template to define conditional attribute rules. When a specific attribute value is selected in the BS wizard, rules automatically <strong>fill in</strong> other attribute values, <strong>filter</strong> available options, and/or <strong>exclude</strong> specific values. All effects reset when the trigger value is deselected.</p>
 
   <h3>12.1 How It Works</h3>
@@ -1630,7 +1648,7 @@ venv/bin/python odoo-bin -d dv_kc --config=/home/server/odoo/odoo.conf \
   <h3>12.7 Module File Structure</h3>
   <div class="file-tree">
 <span class="dir">bs_attr_conditional_rule/</span>
-├── __manifest__.py                    <span class="comment"># version 14.0.1.7.0</span>
+├── __manifest__.py                    <span class="comment"># version 14.0.1.8.0</span>
 ├── __init__.py
 ├── <span class="dir">models/</span>
 │   ├── __init__.py
@@ -1662,9 +1680,57 @@ venv/bin/python odoo-bin -d dv_kc --config=/home/server/odoo/odoo.conf \
   <p>The default <code>_name_search</code> searches by the <code>name</code> field (value name) only. So searching "ข้อต่อ" would match values named "ข้อต่อตรง 180" but not values named "ไม่เอา" that belong to the "ข้อต่อ" attribute. The override adds <code>attribute_id.name</code> to the OR condition, so searching "ข้อต่อ" returns all values of the "ข้อต่อ" attribute regardless of their value name. The domain (<code>attribute_line_ids.value_ids</code>) still prevents values from unrelated products from appearing.</p>
 </section>
 
-<!-- ═══ §13 AI PROMPT GUIDE ═══ -->
+<!-- ═══ §13 SELLING AS A SET ═══ -->
 <section class="section" id="s13">
   <div class="section-tag">§ 13</div>
+  <h2>Selling as a Set (Multi-Piece Configuration)</h2>
+  <p class="section-lead">A product can be sold as a set of several pieces, each configured independently. Set/piece info flows to each MO via <code>set_name</code> and <code>piece_no</code>.</p>
+
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang"><span>TEXT</span>Set Flow</span></div>
+    <pre><code class="language-plaintext">Wizard → tick "Is a Set" → choose "Number of pieces" (2 or 3)
+  Piece 1/N: configure dimensions + attributes → "Next piece"
+  Piece 2/N: configure …                       → "Next piece"
+  Piece N/N: configure …                       → "Apply to SO"
+       └── creates ONE SO line per piece, all sharing one set number,
+           piece_no = 1..N
+SO Confirm → each piece line → its own MO with set_name + piece_no</code></pre>
+  </div>
+
+  <ul>
+    <li><strong>Previous</strong> is shown only when not on the first piece.</li>
+    <li><strong>Apply to SO</strong> replaces <strong>Next piece</strong> only on the last piece.</li>
+    <li>The read-only <strong>Piece</strong> field shows the current position, e.g. <code>2/3</code>.</li>
+    <li><strong>Set number</strong> (<code>bs_set_name</code>) is auto-assigned per sales order: the first set is <code>1</code>, next <code>2</code>, … (capped at 10). No user input.</li>
+    <li>Each piece is <strong>fully independent</strong> — its own width, height, and attribute values.</li>
+    <li>One SO line per piece (<code>bs_piece_no</code> 1..N), so each piece can be a different variant.</li>
+  </ul>
+
+  <h3>13.1 Notes for Production Department</h3>
+  <p>The wizard has a <strong>Notes</strong> box (<code>config_notes</code>). On Apply it is stored on the SO line (<code>bs_config_notes</code>) and, at SO confirmation, written to the MO's <code>internal_noted</code> field. Also shown on the BoM for Sales Order tab. Restored on reconfigure.</p>
+
+  <h3>13.2 Set / Piece on the SO</h3>
+  <p><code>sale.order.line</code> carries <code>bs_set_name</code> and <code>bs_piece_no</code> (Char, matching MO selection values <code>'1'</code>–<code>'10'</code> / <code>'1'</code>–<code>'3'</code>). They appear as <strong>Set</strong> and <strong>Piece</strong> columns on both the Order Lines tab and the BoM for Sales Order tab (blank on non-set lines).</p>
+
+  <h3>13.3 Restricting an Attribute to Specific Pieces — "Available on piece"</h3>
+  <p>On the product template's <strong>Variants</strong> tab, each attribute line has an <strong>Available on piece</strong> Many2many (tags <code>1</code> <code>2</code> <code>3</code>, backed by the <code>bs.config.piece</code> model):</p>
+  <ul>
+    <li><strong>Empty = shown on every piece</strong> (default; fully backward-compatible).</li>
+    <li>Tagged e.g. <code>2</code> → the attribute appears only while configuring piece 2; it is omitted from the other pieces' wizard, variant, components, and validation.</li>
+  </ul>
+
+  <h3>13.4 Reconfigure — ID-based, Rename-Safe (v1.18.0)</h3>
+  <p>Clicking the gear ⚙ on a configured line reopens the wizard pre-filled:</p>
+  <ul>
+    <li>Values are restored <strong>by ID</strong> from <code>bs_config_value_json</code> (<code>{attribute_line_id: pav_id}</code>), so a value rename between Apply and Reconfigure does not break restoration. Legacy lines with no ID map fall back to name lookup.</li>
+    <li>The <strong>rule input</strong> (<code>values</code> dict) and <strong>variant identity</strong> remain <strong>name-based</strong> — every BoM Python rule reads value names; only restoration uses IDs. The UI still displays names.</li>
+    <li>For a <strong>set piece</strong>, reconfigure reopens showing <code>Is a Set</code> ✓ and <code>Piece N/M</code> (read-only), edits only that piece (no Previous/Next), and shows only attributes available on that piece. <code>set_name</code>/<code>piece_no</code> are preserved; no extra lines are created.</li>
+  </ul>
+</section>
+
+<!-- ═══ §14 AI PROMPT GUIDE ═══ -->
+<section class="section" id="s14">
+  <div class="section-tag">§ 14</div>
   <h2>AI Prompt Guide — Writing Python Rules with AI</h2>
   <p class="section-lead">Paste the context block below before every AI request to get accurate rules that follow the v1.7.0 patterns.</p>
 
@@ -1672,8 +1738,8 @@ venv/bin/python odoo-bin -d dv_kc --config=/home/server/odoo/odoo.conf \
   <div class="prompt-box">
     <div class="prompt-box-label">Paste into Claude / ChatGPT before your request</div>
     <div class="code-block" style="margin:0">
-      <div class="code-header"><span class="code-lang"><span>TEXT</span>AI Context Block v1.13.0</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-      <pre><code class="language-plaintext">You are writing Python rules for BS Dynamic BoM Sale Configurator (Odoo 14 v14.0.1.13.0).
+      <div class="code-header"><span class="code-lang"><span>TEXT</span>AI Context Block v1.18.1</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code class="language-plaintext">You are writing Python rules for BS Dynamic BoM Sale Configurator (Odoo 14 v14.0.1.18.1).
 Rules run inside exec() with a sandboxed locals dict. No imports allowed.
 
 ═══ INJECTED VARIABLES ═══
@@ -1687,6 +1753,7 @@ prev_result  list[dict] — previous line output ([] for line 1)
 
 ═══ REQUIRED OUTPUT ═══
 result  list[dict]  — {'product_id': int, 'name': str, 'qty': float}
+                       'description' (or 'note') — optional str → MO component Description column
 result = []  valid (conditional exclusion)
 
 ═══ OPTIONAL OUTPUT ═══
@@ -1694,7 +1761,7 @@ product_name        str   — SO line display name + MO product_description_vari
 default_code        str   — internal reference stamped on a NEWLY-created variant (existing variants untouched)
 product_attributes  FORBIDDEN since v1.8.1 — raises UserError if assigned; variant identity is wizard-only
 
-═══ KEY PATTERNS (v1.13.0) ═══
+═══ KEY PATTERNS (v1.18.1) ═══
 1. Master Rule (§5.11) — RECOMMENDED: single BoM line, 5 cases
    width/height in METRES. Convert: w_cm = w_m * 100.0
    Case 1: PAV search by attr_name+val_name → pav.component_id
@@ -1722,20 +1789,21 @@ NOT: import open eval exec os sys</code></pre>
   <h3>System Prompt for Claude Projects / GPT Custom Instructions</h3>
   <div class="code-block">
     <div class="code-header"><span class="code-lang"><span>TEXT</span>System Prompt</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-    <pre><code class="language-plaintext">You are an expert at writing Python rules for BS Dynamic BoM Sale Configurator (Odoo 14 v14.0.1.13.0).
+    <pre><code class="language-plaintext">You are an expert at writing Python rules for BS Dynamic BoM Sale Configurator (Odoo 14 v14.0.1.18.1).
 
 Rules run in exec() with sandboxed locals. No imports. Key variables:
   values       — wizard inputs (width/height in METRES, uom='m', + attr_name: str value_name)
   bom.env      — ORM access (bom.env['product.attribute.value'].search([...]))
   prev_result  — previous line output ([] for line 1)
-  result       — assign this: [{'product_id':int,'name':str,'qty':float}]
+  result       — assign this: [{'product_id':int,'name':str,'qty':float,'description':str}]
+                 description/note key → MO component Description column + wizard preview sub-line
   product_name — optional str, sets SO line display name + MO product_description_variants
   default_code — optional str, stamps internal reference on a NEWLY-created variant
 
 IMPORTANT v1.8.1: DO NOT assign product_attributes — it raises UserError. Variant identity
 is now wizard-only (built from the wizard's attr_line_ids, not from rule output).
 
-v1.13.0 Master Rule (§5.11) — recommended pattern, 5 cases:
+v1.18.1 Master Rule (§5.11) — recommended pattern, 5 cases:
   w_m = values.get('width', 0.0)   # metres
   w_cm = w_m * 100.0               # cm for stock-length formulas
   Case 1: PAV.search by attr_name + val_name → pav.component_id
@@ -1756,7 +1824,7 @@ Rules:
 
 <footer class="site-footer">
   <div class="footer-brand">Dynamic BoM Sale Configurator</div>
-  <div class="footer-meta">bs_dynamic_bom_sale · v14.0.1.13.0 · Basic Solution Co., Ltd.</div>
+  <div class="footer-meta">bs_dynamic_bom_sale · v14.0.1.18.1 · Basic Solution Co., Ltd.</div>
 </footer>
 </main>
 
